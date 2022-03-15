@@ -1,0 +1,57 @@
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/swissarmy/src",
+  "monorepo": true,
+  "root": "apps/swissarmy",
+  "compilerOptions": {
+    "webpack": true,
+    "tsConfigPath": "apps/swissarmy/tsconfig.app.json"
+  },
+  "projects": {
+    "swissarmy": {
+      "type": "application",
+      "root": "apps/swissarmy",
+      "entryFile": "main",
+      "sourceRoot": "apps/swissarmy/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/swissarmy/tsconfig.app.json"
+      }
+    },
+    "parser": {
+      "type": "application",
+      "root": "apps/parser",
+      "entryFile": "main",
+      "sourceRoot": "apps/parser/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/parser/tsconfig.app.json"
+      }
+    },
+    "http": {
+      "type": "application",
+      "root": "apps/http",
+      "entryFile": "main",
+      "sourceRoot": "apps/http/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/http/tsconfig.app.json"
+      }
+    },
+    "projects": {
+      "type": "library",
+      "root": "libs/projects",
+      "entryFile": "index",
+      "sourceRoot": "libs/projects/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/projects/tsconfig.lib.json"
+      }
+    },
+    "packages": {
+      "type": "library",
+      "root": "libs/packages",
+      "entryFile": "index",
+      "sourceRoot": "libs/packages/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/packages/tsconfig.lib.json"
+      }
+    }
+  }
+}
