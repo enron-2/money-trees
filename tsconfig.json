@@ -29,6 +29,12 @@
       ],
       "@app/packages/*": [
         "libs/packages/src/*"
+      ],
+      "@core": [
+        "libs/core/src"
+      ],
+      "@core/*": [
+        "libs/core/src/*"
       ]
     }
   }
