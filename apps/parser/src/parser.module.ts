@@ -1,10 +1,17 @@
-import { Module } from '@nestjs/common';
-import { ParserController } from './parser.controller';
+import { Logger, Module } from '@nestjs/common';
+import { SchemaModule } from '@schemas/module';
+import { DynamooseModule } from 'nestjs-dynamoose';
 import { ParserService } from './parser.service';
 
 @Module({
-  imports: [],
-  controllers: [ParserController],
+  imports: [
+    DynamooseModule.forRoot({
+      local: true,
+      aws: { region: 'local' },
+      logger: new Logger('DynamoDB'),
+    }),
+    SchemaModule,
+  ],
   providers: [ParserService],
 })
 export class ParserModule {}
