@@ -35,24 +35,6 @@
         "tsConfigPath": "apps/http/tsconfig.app.json"
       }
     },
-    "projects": {
-      "type": "library",
-      "root": "libs/projects",
-      "entryFile": "index",
-      "sourceRoot": "libs/projects/src",
-      "compilerOptions": {
-        "tsConfigPath": "libs/projects/tsconfig.lib.json"
-      }
-    },
-    "packages": {
-      "type": "library",
-      "root": "libs/packages",
-      "entryFile": "index",
-      "sourceRoot": "libs/packages/src",
-      "compilerOptions": {
-        "tsConfigPath": "libs/packages/tsconfig.lib.json"
-      }
-    },
     "core": {
       "type": "library",
       "root": "libs/core",
@@ -60,6 +42,15 @@
       "sourceRoot": "libs/core/src",
       "compilerOptions": {
         "tsConfigPath": "libs/core/tsconfig.lib.json"
+      }
+    },
+    "schemas": {
+      "type": "library",
+      "root": "libs/schemas",
+      "entryFile": "index",
+      "sourceRoot": "libs/schemas/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/schemas/tsconfig.lib.json"
       }
     }
   }

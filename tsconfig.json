@@ -18,18 +18,6 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@app/projects": [
-        "libs/projects/src"
-      ],
-      "@app/projects/*": [
-        "libs/projects/src/*"
-      ],
-      "@app/packages": [
-        "libs/packages/src"
-      ],
-      "@app/packages/*": [
-        "libs/packages/src/*"
-      ],
       "@core": [
         "libs/core/src"
       ],
