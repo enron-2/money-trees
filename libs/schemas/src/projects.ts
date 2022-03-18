@@ -15,7 +15,12 @@ export function createProjectSchema(packageModel: Model): Schema {
       hashKey: true,
     },
     name: { type: String, required: true, validate: isNonEmptyString },
-    url: { type: String, required: true, validate: isURL },
+    url: {
+      type: String,
+      required: true,
+      validate: isURL,
+      index: { name: 'urlIndex', global: true },
+    },
     packages: {
       type: Array,
       schema: [packageModel as any],
