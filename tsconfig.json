@@ -23,6 +23,12 @@
       ],
       "@core/*": [
         "libs/core/src/*"
+      ],
+      "@schemas/schemas": [
+        "libs/schemas/src"
+      ],
+      "@schemas/schemas/*": [
+        "libs/schemas/src/*"
       ]
     }
   }

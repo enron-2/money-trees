@@ -79,7 +79,8 @@
     "moduleNameMapper": {
       "^@app/projects(|/.*)$": "<rootDir>/libs/projects/src/$1",
       "^@app/packages(|/.*)$": "<rootDir>/libs/packages/src/$1",
-      "^@core/core(|/.*)$": "<rootDir>/libs/core/src/$1"
+      "^@core/(|/.*)$": "<rootDir>/libs/core/src/$1",
+      "^@schemas/schemas(|/.*)$": "<rootDir>/libs/schemas/src/$1"
     }
   }
 }
