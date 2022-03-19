@@ -1,4 +1,10 @@
-import { Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import {
+  Get,
+  NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Query,
+} from '@nestjs/common';
 import { Transform } from 'class-transformer';
 import { IsNumber, IsOptional, IsUUID } from 'class-validator';
 import { Model } from 'nestjs-dynamoose';
@@ -14,8 +20,14 @@ export abstract class QueryService {
     return query.exec();
   }
 
-  findOne(id: string) {
-    return this.repository.query().where('id').eq(id).exec();
+  async findOne(id: string) {
+    const res = await this.repository
+      .query()
+      .where('id')
+      .eq(id)
+      .limit(1)
+      .exec();
+    return res?.[0];
   }
 }
 
@@ -42,7 +54,9 @@ export abstract class QueryController {
   }
 
   @Get(':id')
-  findOne(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.findOne(id);
+  async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
+    const res = await this.service.findOne(id);
+    if (!res) throw new NotFoundException();
+    return res;
   }
 }
