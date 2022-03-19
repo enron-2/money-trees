@@ -1,11 +1,15 @@
-import { Logger, Module } from '@nestjs/common';
-import { DynamooseModule } from 'nestjs-dynamoose';
+import { Global, Logger, Module } from '@nestjs/common';
 import { SchemaModule } from '@schemas/module';
-import { PackageController } from './package.controller';
-import { ProjectController } from './project.controller';
-import { VulnController } from './vuln.controller';
+import { DynamooseModule } from 'nestjs-dynamoose';
+import { PackagesModule } from './packages/packages.module';
+import { ProjectsModule } from './projects/projects.module';
+import { VulnsModule } from './vulns/vulns.module';
 
 const logger = new Logger('DynamoDB');
+
+@Global()
+@Module({ imports: [SchemaModule], exports: [SchemaModule] })
+export class GlobalSchema {}
 
 @Module({
   imports: [
@@ -16,8 +20,10 @@ const logger = new Logger('DynamoDB');
           aws: { region: 'local' },
           logger,
         }),
-    SchemaModule,
+    GlobalSchema,
+    PackagesModule,
+    ProjectsModule,
+    VulnsModule,
   ],
-  controllers: [PackageController, ProjectController, VulnController],
 })
 export class HttpModule {}
