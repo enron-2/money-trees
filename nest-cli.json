@@ -1,22 +1,13 @@
 {
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/swissarmy/src",
+  "sourceRoot": "apps/parser/src",
   "monorepo": true,
-  "root": "apps/swissarmy",
+  "root": "apps/parser",
   "compilerOptions": {
     "webpack": true,
-    "tsConfigPath": "apps/swissarmy/tsconfig.app.json"
+    "tsConfigPath": "apps/parser/tsconfig.app.json"
   },
   "projects": {
-    "swissarmy": {
-      "type": "application",
-      "root": "apps/swissarmy",
-      "entryFile": "main",
-      "sourceRoot": "apps/swissarmy/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/swissarmy/tsconfig.app.json"
-      }
-    },
     "parser": {
       "type": "application",
       "root": "apps/parser",

@@ -1,8 +1,8 @@
 {
-  "name": "swissarmy",
+  "name": "money-trees",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Is the perfect place for shade and that's just how I feel",
+  "author": "Enron 2 ethics committee",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -17,8 +17,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./apps/swissarmy/test/jest-e2e.json"
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^8.0.0",
