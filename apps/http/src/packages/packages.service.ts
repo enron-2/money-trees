@@ -4,10 +4,10 @@ import { InjectModel, Model } from 'nestjs-dynamoose';
 import { QueryService } from '../query-service.abstract';
 
 @Injectable()
-export class PackagesService extends QueryService {
+export class PackagesService extends QueryService<Package, PackageKey> {
   constructor(
     @InjectModel('Package')
-    readonly packages: Model<PackageKey, Package, 'id'>,
+    readonly packages: Model<Package, PackageKey, 'id'>,
   ) {
     super(packages);
   }

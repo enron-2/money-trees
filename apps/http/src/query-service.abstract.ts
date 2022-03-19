@@ -9,8 +9,8 @@ import { Transform } from 'class-transformer';
 import { IsNumber, IsOptional, IsUUID } from 'class-validator';
 import { Model } from 'nestjs-dynamoose';
 
-export abstract class QueryService {
-  constructor(private readonly repository: Model<unknown, unknown>) {}
+export abstract class QueryService<Data, Key> {
+  constructor(private readonly repository: Model<Data, Key>) {}
 
   findAll(limit = 10, lastKey?: string) {
     let query = this.repository.scan().limit(limit);
@@ -43,7 +43,7 @@ class PaginationDto {
 }
 
 export abstract class QueryController {
-  constructor(private readonly service: QueryService) {}
+  constructor(private readonly service: QueryService<unknown, unknown>) {}
 
   @Get()
   findAll(
