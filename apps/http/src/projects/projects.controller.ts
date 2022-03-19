@@ -5,9 +5,11 @@ import {
   Param,
   ParseUUIDPipe,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { QueryController } from '../query-service.abstract';
 import { ProjectsService } from './projects.service';
 
+@ApiTags('Projects')
 @Controller('projects')
 export class ProjectsController extends QueryController {
   constructor(private readonly projectsService: ProjectsService) {

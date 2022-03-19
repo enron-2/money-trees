@@ -5,6 +5,7 @@ import {
   ParseUUIDPipe,
   Query,
 } from '@nestjs/common';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNumber, IsOptional, IsUUID } from 'class-validator';
 import { Model } from 'nestjs-dynamoose';
@@ -32,11 +33,13 @@ export abstract class QueryService<Data, Key> {
 }
 
 class PaginationDto {
+  @ApiPropertyOptional()
   @IsOptional()
   @Transform((param) => +param.value)
   @IsNumber()
   limit?: number;
 
+  @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()
   lastKey?: string;
