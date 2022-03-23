@@ -1,10 +1,3 @@
-import {
-  Get,
-  NotFoundException,
-  Param,
-  ParseUUIDPipe,
-  Query,
-} from '@nestjs/common';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNumber, IsOptional, IsUUID } from 'class-validator';
@@ -32,8 +25,8 @@ export abstract class QueryService<Data, Key> {
   }
 }
 
-class PaginationDto {
-  @ApiPropertyOptional()
+export class PaginationDto {
+  @ApiPropertyOptional({ default: 10 })
   @IsOptional()
   @Transform((param) => +param.value)
   @IsNumber()
@@ -43,23 +36,4 @@ class PaginationDto {
   @IsOptional()
   @IsUUID()
   lastKey?: string;
-}
-
-export abstract class QueryController {
-  constructor(private readonly service: QueryService<unknown, unknown>) {}
-
-  @Get()
-  findAll(
-    @Query()
-    { limit, lastKey }: PaginationDto,
-  ) {
-    return this.service.findAll(limit, lastKey);
-  }
-
-  @Get(':id')
-  async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
-    const res = await this.service.findOne(id);
-    if (!res) throw new NotFoundException();
-    return res;
-  }
 }
