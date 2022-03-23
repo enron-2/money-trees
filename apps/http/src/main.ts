@@ -3,6 +3,10 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpModule } from './http.module';
 
+/**
+ * NOT FOR PRODUCTION
+ * Used to locally test api and inspect API documentation
+ */
 async function bootstrap() {
   const app = await NestFactory.create(HttpModule);
 
