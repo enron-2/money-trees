@@ -62,7 +62,7 @@ export class ParserService {
         // Save only package matching domain, only if domain is defined
         .filter(([, pkg]) => !domain || pattern.test(pkg.resolved))
         .map(async ([name, pkg]) => {
-          const [packageFound] = await this.pkg
+          const [packageFound]: Document<Package>[] = await this.pkg
             .query()
             .where('checksum')
             .eq(pkg.integrity)
@@ -70,7 +70,7 @@ export class ParserService {
 
           if (packageFound) {
             logger.log(`Found package in database: ${packageFound.name}`);
-            return packageFound;
+            return packageFound.id;
           }
 
           const pkgIdentifier = `${name}@${pkg.version}`;
@@ -84,7 +84,7 @@ export class ParserService {
           });
           logger.log(`Created ${pkgIdentifier}`);
 
-          return savedPkg;
+          return savedPkg.id;
         }),
     );
     logger.log(`Processed ${packages?.length || 0} packages`);
@@ -97,8 +97,22 @@ export class ParserService {
 
     if (project) {
       const { id, ...data } = project;
-      await this.prj.update({ id }, { ...data, url, packages, name });
-    } else await this.prj.create({ url, packages, name });
+      await this.prj.update(
+        { id },
+        {
+          ...data,
+          url,
+          packages: packages as any,
+          name,
+        },
+      );
+    } else {
+      await this.prj.create({
+        url,
+        packages: packages as any,
+        name,
+      });
+    }
 
     if (project) logger.log('Updated existing project');
     else logger.log('New project with dependencies created');
@@ -108,14 +122,11 @@ export class ParserService {
       : `Created project ${name}, ${packages.length} added`;
   }
 
+  /** Filter out things prefixed with node_modules */
   removeNodeModulePrefix(input: PackageLock) {
     const newMap: PackageLock['packages'] = new Map();
     input.packages.forEach((v, k) => {
-      let key = k;
-      if (k.startsWith('node_modules/')) {
-        key = k.slice('node_modules/'.length);
-      }
-      newMap.set(key, v);
+      if (!k.startsWith('node_modules/')) newMap.set(k, v);
     });
     input.packages = newMap;
     return input;

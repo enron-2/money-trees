@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { DynamooseModule } from 'nestjs-dynamoose';
+import axios from 'axios';
 import { SchemaModule } from '@schemas/module';
 import { ParserService } from './parser.service';
 
@@ -52,6 +53,8 @@ const deletedLockContents = `
 }
 `;
 
+jest.setTimeout(30000);
+
 describe('Parser module', () => {
   let svc: ParserService;
 
@@ -71,6 +74,23 @@ describe('Parser module', () => {
     await app.init();
 
     svc = app.get(ParserService);
+
+    let pkgs = await svc.pkg.scan().limit(10).exec();
+    let pkgCount = 0;
+    while (pkgs.length > 0) {
+      await svc.pkg.batchDelete(pkgs.map(({ id }) => ({ id })));
+      pkgCount += pkgs.length;
+      pkgs = await svc.pkg.scan().limit(10).exec();
+    }
+
+    let prjs = await svc.prj.scan().limit(10).exec();
+    let prjCount = 0;
+    while (prjs.length > 0) {
+      await svc.prj.batchDelete(prjs.map(({ id }) => ({ id })));
+      prjCount += prjs.length;
+      prjs = await svc.prj.scan().limit(10).exec();
+    }
+    console.log(`Deleted ${pkgCount} packages\nDeleted ${prjCount} projects`);
   });
 
   it('Should be defined', () => {
@@ -148,16 +168,42 @@ describe('Parser module', () => {
     expect(prj.packages.length).toBe(0);
   });
 
+  it('Should parse and save open-source package-lock file(s)', async () => {
+    const source = {
+      repo: 'lodash/lodash',
+      url: 'https://github.com/lodash/lodash/raw/bcd0610069b341ad6094f24abc4c3bdc10a9d1b6/package-lock.json',
+    };
+
+    const { data, status } = await axios.get(source.url);
+    expect(status).toBe(200);
+    const [owner, name] = source.repo.split('/');
+    await svc.parseFileContents(JSON.stringify(data), { owner, name });
+    const [res] = await svc.prj
+      .query()
+      .where('url')
+      .eq(`https://github.com/${source.repo}`)
+      .limit(1)
+      .exec();
+    expect(res).toBeDefined();
+    expect(res.name).toBe(source.repo);
+  });
+
   afterAll(async () => {
-    let pkgs = await svc.pkg.scan().exec();
+    let pkgCount = 0;
+    let pkgs = await svc.pkg.scan().limit(10).exec();
     while (pkgs.length > 0) {
       await svc.pkg.batchDelete(pkgs.map(({ id }) => ({ id })));
-      pkgs = await svc.pkg.scan().exec();
+      pkgCount += pkgs.length;
+      pkgs = await svc.pkg.scan().limit(10).exec();
     }
-    let prjs = await svc.prj.scan().exec();
+
+    let prjCount = 0;
+    let prjs = await svc.prj.scan().limit(10).exec();
     while (prjs.length > 0) {
       await svc.prj.batchDelete(prjs.map(({ id }) => ({ id })));
-      prjs = await svc.pkg.scan().exec();
+      prjCount += prjs.length;
+      prjs = await svc.prj.scan().limit(10).exec();
     }
+    console.log(`Deleted ${pkgCount} packages\nDeleted ${prjCount} projects`);
   });
 });
