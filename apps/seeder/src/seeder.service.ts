@@ -30,22 +30,27 @@ export class SeederService {
 
     const packages = await Promise.all(
       Array.from(lockFile.packages).map(async ([key, val]) => {
-        const [existingPkg] = await this.pkg
+        const existingPkgs = await this.pkg
           .query()
           .where('checksum')
-          .eq(val.integrity)
-          .limit(1)
+          .eq(val.integrity.trim())
           .exec();
+
+        if (existingPkgs.length > 1) {
+          logger.error(`Checksum collision: ${key}@${val.version}`);
+        }
+
+        const existingPkg = existingPkgs[0];
         if (existingPkg) {
           logger.log(`Found existing package: ${existingPkg.name}`);
           return existingPkg;
         }
         logger.log(`Creating package: ${key}`);
         return this.pkg.create({
-          name: key,
-          version: val.version,
-          url: val.resolved,
-          checksum: val.integrity,
+          name: key.trim(),
+          version: val.version.trim(),
+          url: val.resolved.trim(),
+          checksum: val.integrity.trim(),
           createdAt: new Date(),
         });
       }),
@@ -53,12 +58,7 @@ export class SeederService {
 
     const name = `${repoInfo.owner}/${repoInfo.repository}`;
     const url = `https://github.com/${name}`;
-    const [project] = await this.prj
-      .query()
-      .where('url')
-      .eq(url)
-      .limit(1)
-      .exec();
+    const [project] = await this.prj.query().where('url').eq(url).exec();
     if (project) {
       logger.log(`Project found: ${project.name}`);
       const { id, ...data } = project;

@@ -56,17 +56,28 @@ export class ParserService {
 
     const pattern = new RegExp(`http.*${domain}.*/.*`);
 
+    // BUG: may violate package checksum unique constraint
+    // If multiple lambdas spawn at the same time, all of them may create its
+    // own 'instance' of the package with the same checksum
+    // fix: use another dynamodb table as 'lock' primitives
+
     lockFile = this.removeNodeModulePrefix(lockFile);
     const packages = await Promise.all(
       Array.from(lockFile.packages)
         // Save only package matching domain, only if domain is defined
         .filter(([, pkg]) => !domain || pattern.test(pkg.resolved))
         .map(async ([name, pkg]) => {
-          const [packageFound]: Document<Package>[] = await this.pkg
+          const packagesFound: Document<Package>[] = await this.pkg
             .query()
             .where('checksum')
-            .eq(pkg.integrity)
+            .eq(pkg.integrity.trim())
             .exec();
+
+          if (packagesFound.length > 1) {
+            logger.error(`Checksum collision: ${name}@${pkg.version}`);
+          }
+
+          const packageFound = packagesFound[0];
 
           if (packageFound) {
             logger.log(`Found package in database: ${packageFound.name}`);
@@ -76,10 +87,10 @@ export class ParserService {
           const pkgIdentifier = `${name}@${pkg.version}`;
           logger.log(`Creating ${pkgIdentifier}`);
           const savedPkg: Document<Package> = await this.pkg.create({
-            name,
-            checksum: pkg.integrity,
-            url: pkg.resolved,
-            version: pkg.version,
+            name: name.trim(),
+            checksum: pkg.integrity.trim(),
+            url: pkg.resolved.trim(),
+            version: pkg.version.trim(),
             createdAt: new Date(),
           });
           logger.log(`Created ${pkgIdentifier}`);
