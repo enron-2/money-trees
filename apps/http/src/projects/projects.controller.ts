@@ -5,9 +5,11 @@ import {
   Param,
   ParseUUIDPipe,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { ProjectDetailDto, ProjectDto } from '../dto';
+import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { ProjectsService } from './projects.service';
 
@@ -19,6 +21,7 @@ export class ProjectsController {
   @ApiOkResponse({
     type: [ProjectDto],
   })
+  @UseInterceptors(new DtoConformInterceptor(ProjectDto))
   @Get()
   findAll(
     @Query()
@@ -30,6 +33,7 @@ export class ProjectsController {
   @ApiOkResponse({
     type: ProjectDto,
   })
+  @UseInterceptors(new DtoConformInterceptor(ProjectDto))
   @Get(':id')
   async findOne(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -43,6 +47,7 @@ export class ProjectsController {
   @ApiOkResponse({
     type: ProjectDetailDto,
   })
+  @UseInterceptors(new DtoConformInterceptor(ProjectDetailDto))
   @Get(':id/packages')
   async packagesInProject(
     @Param('id', new ParseUUIDPipe()) id: string,

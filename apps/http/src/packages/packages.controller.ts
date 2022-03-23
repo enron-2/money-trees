@@ -5,9 +5,11 @@ import {
   Param,
   ParseUUIDPipe,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { PackageDetailDto, PackageDto } from '../dto';
+import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { PackagesService } from './packages.service';
 
@@ -19,6 +21,7 @@ export class PackagesController {
   @ApiOkResponse({
     type: [PackageDto],
   })
+  @UseInterceptors(new DtoConformInterceptor(PackageDto))
   @Get()
   findAll(
     @Query()
@@ -30,6 +33,7 @@ export class PackagesController {
   @ApiOkResponse({
     type: PackageDto,
   })
+  @UseInterceptors(new DtoConformInterceptor(PackageDto))
   @Get(':id')
   async findOne(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -43,6 +47,7 @@ export class PackagesController {
   @ApiOkResponse({
     type: PackageDetailDto,
   })
+  @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
   @Get(':id/vulns')
   async vulnsInPackage(
     @Param('id', new ParseUUIDPipe()) id: string,

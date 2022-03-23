@@ -5,9 +5,11 @@ import {
   Param,
   ParseUUIDPipe,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { VulnDto } from '../dto';
+import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { VulnsService } from './vulns.service';
 
@@ -19,6 +21,7 @@ export class VulnsController {
   @ApiOkResponse({
     type: [VulnDto],
   })
+  @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Get()
   findAll(
     @Query()
@@ -30,6 +33,7 @@ export class VulnsController {
   @ApiOkResponse({
     type: VulnDto,
   })
+  @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Get(':id')
   async findOne(
     @Param('id', new ParseUUIDPipe()) id: string,
