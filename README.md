@@ -42,6 +42,7 @@ $ npm install
 ```
 
 ## Test
+### Unit
 - Not 100% completed
 - Only parser has proper tests
 ```bash
@@ -50,6 +51,19 @@ $ npm run test
 
 # test coverage
 $ npm run test:cov
+```
+
+### End-to-end
+- Only for http module
+```bash
+# Start docker
+docker-compose up -d
+
+# Run script
+npm run test:e2e:http
+
+# Stop docker
+docker-compose down
 ```
 
 ## Support

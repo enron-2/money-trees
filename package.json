@@ -18,6 +18,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e:http": "NODE_ENV=development jest --config ./apps/http/test/jest-e2e.json \"http\"",
     "seed": "DOMAIN=test-domain nest start \"seeder\""
   },
   "dependencies": {
