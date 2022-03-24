@@ -1,28 +1,37 @@
+import { IsNonEmptyString } from '@core/validator';
 import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { Package } from '@schemas/packages';
 import { Project } from '@schemas/projects';
 import { Vulnerability } from '@schemas/vulnerabilities';
 import { Expose, Type } from 'class-transformer';
+import { IsOptional, IsPositive, IsUUID } from 'class-validator';
 
 export class VulnDto implements Vulnerability {
   @Expose()
   @ApiProperty()
+  @IsUUID()
   id: string;
 
   @Expose()
   @ApiPropertyOptional()
+  @IsOptional()
+  @IsNonEmptyString()
   cve?: string;
 
   @Expose()
   @ApiProperty()
+  @IsNonEmptyString()
   title: string;
 
   @Expose()
   @ApiPropertyOptional()
+  @IsOptional()
+  @IsNonEmptyString()
   description?: string;
 
   @Expose()
   @ApiProperty()
+  @IsPositive()
   severity: number;
 }
 
