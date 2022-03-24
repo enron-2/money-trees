@@ -40,27 +40,31 @@ async function bootstrap() {
     },
   ];
 
+  const bars = '='.repeat(process.stdout.columns);
+
   for (const { url, repo } of source) {
     const { status, data } = await axios.get(url);
     if (status != 200) throw new Error(`Cannot get lock-file for ${repo}`);
 
     const [owner, repository] = repo.split('/');
     try {
-      await svc.loadContent(JSON.stringify(data), {
+      const response = await svc.loadContent(JSON.stringify(data), {
         owner,
         repository,
       });
+      console.log(
+        `SUCCESS ${'='.repeat(process.stdout.columns - 'SUCCESS '.length)}`,
+      );
+      console.log(response);
+      console.log(bars);
     } catch (error) {
-      const bars =
-        '==============================================================';
       console.log(bars);
       console.log('REPOSITORY: ', repo);
       console.log(
-        'ERROR ========================================================',
+        `ERROR ${'='.repeat(process.stdout.columns - 'ERROR '.length)}`,
       );
       console.log(error);
-      console.log(bars);
-      console.log('Rolling back changes');
+      console.log('> Rolling back changes');
       let scanPkg = await svc.pkg.scan().limit(10).exec();
       let pkgCount = 0;
       while (scanPkg?.length > 0) {
@@ -68,8 +72,7 @@ async function bootstrap() {
         await svc.pkg.batchDelete(scanPkg.map(({ id }) => ({ id })));
         scanPkg = await svc.pkg.scan().limit(10).exec();
       }
-      console.log(`Deleted ${pkgCount} packages`);
-
+      console.log(`> Deleted ${pkgCount} packages`);
       let scanPrj = await svc.prj.scan().limit(10).exec();
       let prjCount = 0;
       while (scanPrj?.length > 0) {
@@ -77,7 +80,8 @@ async function bootstrap() {
         await svc.prj.batchDelete(scanPrj.map(({ id }) => ({ id })));
         scanPrj = await svc.pkg.scan().limit(10).exec();
       }
-      console.log(`Deleted ${prjCount} projects`);
+      console.log(`> Deleted ${prjCount} projects`);
+      console.log(bars);
     }
   }
 
