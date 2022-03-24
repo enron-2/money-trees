@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNumber, IsOptional, IsUUID } from 'class-validator';
+import { IsNumber, IsOptional, IsUUID, Max, Min } from 'class-validator';
 import { Model } from 'nestjs-dynamoose';
 
 export abstract class QueryService<Data, Key> {
@@ -15,13 +15,13 @@ export abstract class QueryService<Data, Key> {
   }
 
   async findOne(id: string) {
-    const res = await this.repository
+    const [res] = await this.repository
       .query()
       .where('id')
       .eq(id)
       .limit(1)
       .exec();
-    return res?.[0];
+    return res;
   }
 }
 
@@ -30,6 +30,8 @@ export class PaginationDto {
   @IsOptional()
   @Transform((param) => +param.value)
   @IsNumber()
+  @Min(1)
+  @Max(100)
   limit?: number;
 
   @ApiPropertyOptional()
