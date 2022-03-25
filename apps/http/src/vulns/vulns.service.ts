@@ -35,6 +35,7 @@ export class VulnsService extends QueryService<
   }
 
   async unlinkFromPackage(vulnId: string) {
+    // Get all packages containing vulnId
     const pkgs = await this.pkgSvc.packages
       .scan()
       .where('vulns')
@@ -43,6 +44,7 @@ export class VulnsService extends QueryService<
       .exec();
     return pkgs.map((pkg) => ({
       ...pkg,
+      // Remove vulnId from vulns
       vulns: pkg.vulns.filter((vId: any) => vId !== vulnId),
     }));
   }
@@ -54,13 +56,13 @@ export class VulnsService extends QueryService<
       packageIds.map((id) => this.linkToPackage(vulnId, id)),
     ).then((res) => res.filter((p) => !!p));
 
-    // TODO: wrap this section in Transaction
-    const newVuln = await this.vulns.create({ id: vulnId, ...data });
-    await Promise.all(
-      pkgs.map(({ id, ...data }) => this.pkgSvc.packages.update({ id }, data)),
+    const newVuln = this.vulns.transaction.create({ id: vulnId, ...data });
+    const updatedPkgs = pkgs.map(({ id, ...data }) =>
+      this.pkgSvc.packages.transaction.update({ id }, data),
     );
+    await this.transaction([newVuln, ...updatedPkgs]);
 
-    return newVuln;
+    return this.vulns.get({ id: vulnId });
   }
 
   async update(id: string, input: UpdateVulnInput) {
@@ -74,11 +76,11 @@ export class VulnsService extends QueryService<
     if (!toDelete) throw new NotFoundException();
     const pkgs = await this.unlinkFromPackage(id);
 
-    // TODO: wrap this section in Transaction
-    await Promise.all(
-      pkgs.map(({ id, ...data }) => this.pkgSvc.packages.update({ id }, data)),
+    const deletedVuln = this.vulns.transaction.delete({ id });
+    const updatedPkgs = pkgs.map(({ id, ...data }) =>
+      this.pkgSvc.packages.transaction.update({ id }, data),
     );
-    await this.vulns.delete({ id });
+    await this.transaction([...updatedPkgs, deletedVuln]);
 
     return toDelete;
   }
