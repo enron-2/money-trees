@@ -66,6 +66,18 @@ npm run test:e2e:http
 docker-compose down
 ```
 
+## Building/compiling
+All of these steps still requires `node_modules` folder
+```bash
+# build http lambda
+npm run build:prod http
+
+# build parser lambda
+npm run build:prod parser
+```
+- Requires the `:prod` suffix, it uses the production cli configs
+- Changes `projects.http.entryFile` to `index`, since its the lambda's entry point
+
 ## Support
 - ?????
 
