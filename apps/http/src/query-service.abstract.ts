@@ -1,10 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNumber, IsOptional, IsUUID, Max, Min } from 'class-validator';
-import { Model } from 'nestjs-dynamoose';
+import { Model, TransactionSupport } from 'nestjs-dynamoose';
 
-export abstract class QueryService<Data, Key> {
-  constructor(private readonly repository: Model<Data, Key>) {}
+export abstract class QueryService<Data, Key> extends TransactionSupport {
+  constructor(private readonly repository: Model<Data, Key>) {
+    super();
+  }
 
   findAll(limit = 10, lastKey?: string) {
     let query = this.repository.scan().limit(limit);
