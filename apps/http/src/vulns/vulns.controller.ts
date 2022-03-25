@@ -12,7 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { VulnDto } from '../dto';
+import { PackageDetailDto, PackageDto, VulnDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { CreateVulnInput, UpdateVulnInput } from './vulns.dto';
@@ -26,10 +26,7 @@ export class VulnsController {
   @ApiOkResponse({ type: [VulnDto] })
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Get()
-  findAll(
-    @Query()
-    { limit, lastKey }: PaginationDto,
-  ): Promise<VulnDto[]> {
+  findAll(@Query() { limit, lastKey }: PaginationDto): Promise<VulnDto[]> {
     return this.vulnsService.findAll(limit, lastKey);
   }
 
@@ -66,5 +63,35 @@ export class VulnsController {
   @Delete(':id')
   deleteVuln(@Param('id', new ParseUUIDPipe()) id: string): Promise<VulnDto> {
     return this.vulnsService.delete(id);
+  }
+
+  @ApiOkResponse({ type: [PackageDto] })
+  @UseInterceptors(new DtoConformInterceptor(PackageDto))
+  @Get(':vulnId/packages')
+  packagesAffectedByVuln(
+    @Param('vulnId', new ParseUUIDPipe()) vulnId: string,
+    @Query() { limit, lastKey }: PaginationDto,
+  ): Promise<PackageDto[]> {
+    return this.vulnsService.packagesAffected(vulnId, limit, lastKey);
+  }
+
+  @ApiOkResponse({ type: PackageDetailDto })
+  @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
+  @Put(':vulnId/packages/:packageId')
+  addVulnToPackage(
+    @Param('vulnId', new ParseUUIDPipe()) vulnId: string,
+    @Param('packageId', new ParseUUIDPipe()) packageId: string,
+  ): Promise<PackageDetailDto> {
+    return this.vulnsService.includePackage(vulnId, packageId);
+  }
+
+  @ApiOkResponse({ type: PackageDetailDto })
+  @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
+  @Delete(':vulnId/packages/:packageId')
+  removeVulnFromPackage(
+    @Param('vulnId', new ParseUUIDPipe()) vulnId: string,
+    @Param('packageId', new ParseUUIDPipe()) packageId: string,
+  ): Promise<PackageDetailDto> {
+    return this.vulnsService.excludePackage(vulnId, packageId);
   }
 }
