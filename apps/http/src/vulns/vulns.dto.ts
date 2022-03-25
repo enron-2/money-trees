@@ -4,10 +4,10 @@ import { VulnDto } from '../dto';
 
 export class CreateVulnInput extends OmitType(VulnDto, ['id']) {
   @ApiProperty()
-  @IsUUID()
-  packageId: string;
+  @IsUUID('4', { each: true })
+  packageIds: string[];
 }
 
 export class UpdateVulnInput extends PartialType(
-  OmitType(CreateVulnInput, ['packageId']),
+  OmitType(CreateVulnInput, ['packageIds']),
 ) {}
