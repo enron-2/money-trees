@@ -3,8 +3,8 @@ import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { Package } from '@schemas/packages';
 import { Project } from '@schemas/projects';
 import { Vulnerability } from '@schemas/vulnerabilities';
-import { Expose, Type } from 'class-transformer';
-import { IsOptional, IsPositive, IsUUID } from 'class-validator';
+import { Expose, Transform, Type } from 'class-transformer';
+import { IsInt, IsOptional, IsPositive, IsUUID } from 'class-validator';
 
 export class VulnDto implements Vulnerability {
   @Expose()
@@ -30,8 +30,10 @@ export class VulnDto implements Vulnerability {
   description?: string;
 
   @Expose()
-  @ApiProperty()
+  @ApiProperty({ minimum: 1 })
+  @Transform((param) => +param.value)
   @IsPositive()
+  @IsInt()
   severity: number;
 }
 
