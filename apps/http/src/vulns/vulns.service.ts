@@ -28,10 +28,9 @@ export class VulnsService extends QueryService<
     const scanner = this.pkgSvc.packages
       .scan()
       .where('vulns')
-      .contains(vuln.id)
-      .limit(limit);
+      .contains(vuln.id);
     if (!!lastKey) scanner.startAt({ id: lastKey });
-    return scanner.exec();
+    return scanner.exec().then((res) => res.slice(0, limit));
   }
 
   /**
