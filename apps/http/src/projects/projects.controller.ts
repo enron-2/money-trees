@@ -7,17 +7,33 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  IntersectionType,
+  OmitType,
+  PartialType,
+} from '@nestjs/swagger';
 import { ProjectDetailDto, ProjectDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { ProjectsService } from './projects.service';
+
+class ProjectSearchInputDto extends PartialType(
+  IntersectionType(OmitType(ProjectDto, ['id']), PaginationDto),
+) {}
 
 @ApiTags('Projects')
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
+  @ApiOperation({
+    summary: 'All projects',
+    description:
+      'Query for projects uses the AND operator and you can paginate by supplying at least the lastKey param',
+  })
   @ApiOkResponse({
     type: [ProjectDto],
   })
@@ -25,11 +41,12 @@ export class ProjectsController {
   @Get()
   findAll(
     @Query()
-    { limit, lastKey }: PaginationDto,
+    { limit, lastKey, ...query }: ProjectSearchInputDto,
   ): Promise<ProjectDto[]> {
-    return this.projectsService.findAll(limit, lastKey);
+    return this.projectsService.findAll(limit, lastKey, query);
   }
 
+  @ApiOperation({ summary: 'Project with given ID' })
   @ApiOkResponse({
     type: ProjectDto,
   })
@@ -44,6 +61,9 @@ export class ProjectsController {
   }
 
   // TODO: handle pagination of packages?
+  @ApiOperation({
+    summary: 'Project with given ID including its dependencies (packages used)',
+  })
   @ApiOkResponse({
     type: ProjectDetailDto,
   })

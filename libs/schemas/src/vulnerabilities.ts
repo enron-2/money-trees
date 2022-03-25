@@ -8,7 +8,7 @@ export const createVulnerabilitySchema = (): Schema =>
     id: {
       type: String,
       default: uuid,
-      set: (_, old) => old ?? uuid(),
+      set: (newVal, oldVal) => (!!newVal && !!oldVal ? oldVal : newVal),
       required: true,
       hashKey: true,
     },

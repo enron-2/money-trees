@@ -1,32 +1,41 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNumber, IsOptional, IsUUID, Max, Min } from 'class-validator';
-import { Model } from 'nestjs-dynamoose';
+import { Model, TransactionSupport } from 'nestjs-dynamoose';
 
-export abstract class QueryService<Data, Key> {
-  constructor(private readonly repository: Model<Data, Key>) {}
+export abstract class QueryService<Data, Key> extends TransactionSupport {
+  constructor(private readonly repository: Model<Data, Key>) {
+    super();
+  }
 
-  findAll(limit = 10, lastKey?: string) {
-    let query = this.repository.scan().limit(limit);
-    if (lastKey) {
-      query = query.startAt({ id: lastKey });
+  async findAll(limit = 10, lastKey?: string, query?: Record<string, any>) {
+    let scanner = this.repository.scan();
+    for (const [k, v] of Object.entries(query)) {
+      if (!v) continue;
+      scanner =
+        typeof v === 'string'
+          ? scanner.and().where(k).contains(v)
+          : scanner.and().where(k).eq(v);
     }
-    return query.exec();
+    if (lastKey) {
+      scanner = scanner.startAt({ id: lastKey });
+    }
+    if (Object.values(query).filter((v) => !!v).length > 0) {
+      const res = await scanner.exec();
+      return res.slice(0, limit);
+    } else {
+      return scanner.limit(limit).exec();
+    }
   }
 
   async findOne(id: string) {
-    const [res] = await this.repository
-      .query()
-      .where('id')
-      .eq(id)
-      .limit(1)
-      .exec();
+    const [res] = await this.repository.query().where('id').eq(id).exec();
     return res;
   }
 }
 
 export class PaginationDto {
-  @ApiPropertyOptional({ default: 10 })
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 10 })
   @IsOptional()
   @Transform((param) => +param.value)
   @IsNumber()
