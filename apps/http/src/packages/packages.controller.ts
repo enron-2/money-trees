@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiOkResponse,
+  ApiOperation,
   ApiPropertyOptional,
   ApiTags,
   IntersectionType,
@@ -37,6 +38,11 @@ class PackageSearchInputDto extends PartialType(
 export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}
 
+  @ApiOperation({
+    summary: 'All packages',
+    description:
+      'Query for packages uses the AND operator and you can paginate by supplying at least the lastKey param',
+  })
   @ApiOkResponse({
     type: [PackageDto],
   })
@@ -49,6 +55,7 @@ export class PackagesController {
     return this.packagesService.findAll(limit, lastKey, query);
   }
 
+  @ApiOperation({ summary: 'Package with given ID' })
   @ApiOkResponse({
     type: PackageDto,
   })
@@ -63,6 +70,9 @@ export class PackagesController {
   }
 
   // TODO: handle pagination of vulns?
+  @ApiOperation({
+    summary: 'Package with given ID including vulnerabilities',
+  })
   @ApiOkResponse({
     type: PackageDetailDto,
   })

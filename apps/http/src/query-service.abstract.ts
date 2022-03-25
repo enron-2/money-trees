@@ -35,7 +35,7 @@ export abstract class QueryService<Data, Key> extends TransactionSupport {
 }
 
 export class PaginationDto {
-  @ApiPropertyOptional({ default: 10 })
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 10 })
   @IsOptional()
   @Transform((param) => +param.value)
   @IsNumber()

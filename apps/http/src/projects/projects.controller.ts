@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
   IntersectionType,
   OmitType,
@@ -28,6 +29,11 @@ class ProjectSearchInputDto extends PartialType(
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
+  @ApiOperation({
+    summary: 'All projects',
+    description:
+      'Query for projects uses the AND operator and you can paginate by supplying at least the lastKey param',
+  })
   @ApiOkResponse({
     type: [ProjectDto],
   })
@@ -40,6 +46,7 @@ export class ProjectsController {
     return this.projectsService.findAll(limit, lastKey, query);
   }
 
+  @ApiOperation({ summary: 'Project with given ID' })
   @ApiOkResponse({
     type: ProjectDto,
   })
@@ -54,6 +61,9 @@ export class ProjectsController {
   }
 
   // TODO: handle pagination of packages?
+  @ApiOperation({
+    summary: 'Project with given ID including its dependencies (packages used)',
+  })
   @ApiOkResponse({
     type: ProjectDetailDto,
   })
