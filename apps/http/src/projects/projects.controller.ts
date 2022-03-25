@@ -7,11 +7,21 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiTags,
+  IntersectionType,
+  OmitType,
+  PartialType,
+} from '@nestjs/swagger';
 import { ProjectDetailDto, ProjectDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { ProjectsService } from './projects.service';
+
+class ProjectSearchInputDto extends PartialType(
+  IntersectionType(OmitType(ProjectDto, ['id']), PaginationDto),
+) {}
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -25,9 +35,9 @@ export class ProjectsController {
   @Get()
   findAll(
     @Query()
-    { limit, lastKey }: PaginationDto,
+    { limit, lastKey, ...query }: ProjectSearchInputDto,
   ): Promise<ProjectDto[]> {
-    return this.projectsService.findAll(limit, lastKey);
+    return this.projectsService.findAll(limit, lastKey, query);
   }
 
   @ApiOkResponse({
