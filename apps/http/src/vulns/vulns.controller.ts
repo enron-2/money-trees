@@ -11,12 +11,23 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiTags,
+  IntersectionType,
+  OmitType,
+  PartialType,
+} from '@nestjs/swagger';
 import { PackageDetailDto, PackageDto, VulnDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { CreateVulnInput, UpdateVulnInput } from './vulns.dto';
 import { VulnsService } from './vulns.service';
+
+class VulnSearchInputDto extends PartialType(
+  IntersectionType(OmitType(VulnDto, ['id']), PaginationDto),
+) {}
 
 @ApiTags('Vulnerabilities')
 @Controller('vulns')
@@ -26,8 +37,10 @@ export class VulnsController {
   @ApiOkResponse({ type: [VulnDto] })
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Get()
-  findAll(@Query() { limit, lastKey }: PaginationDto): Promise<VulnDto[]> {
-    return this.vulnsService.findAll(limit, lastKey);
+  findAll(
+    @Query() { limit, lastKey, ...query }: VulnSearchInputDto,
+  ): Promise<VulnDto[]> {
+    return this.vulnsService.findAll(limit, lastKey, query);
   }
 
   @ApiOkResponse({ type: VulnDto })
