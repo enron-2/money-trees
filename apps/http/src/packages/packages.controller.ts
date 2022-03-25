@@ -7,11 +7,30 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiPropertyOptional,
+  ApiTags,
+  IntersectionType,
+  OmitType,
+  PartialType,
+} from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsNumber, IsOptional } from 'class-validator';
 import { PackageDetailDto, PackageDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { PackagesService } from './packages.service';
+
+class PackageSearchInputDto extends PartialType(
+  IntersectionType(OmitType(PackageDto, ['id', 'createdAt']), PaginationDto),
+) {
+  @ApiPropertyOptional({ type: Number })
+  @IsOptional()
+  @Transform((param) => +param.value)
+  @IsNumber()
+  createdAt?: number;
+}
 
 @ApiTags('Packages')
 @Controller('packages')
@@ -25,9 +44,9 @@ export class PackagesController {
   @Get()
   findAll(
     @Query()
-    { limit, lastKey }: PaginationDto,
+    { limit, lastKey, ...query }: PackageSearchInputDto,
   ): Promise<PackageDto[]> {
-    return this.packagesService.findAll(limit, lastKey);
+    return this.packagesService.findAll(limit, lastKey, query);
   }
 
   @ApiOkResponse({
