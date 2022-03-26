@@ -42,7 +42,6 @@ export class VulnsService extends QueryService<
    * Does not run any mutation operations
    */
   private async linkToPackage(vulnId: string, packageId: string) {
-    /* eslint-disable @typescript-eslint/no-explicit-any */
     const pkg = await this.pkgSvc.findOne(packageId);
     if (!pkg.vulns && !Array.isArray(pkg.vulns)) {
       // First vuln on package
@@ -55,7 +54,6 @@ export class VulnsService extends QueryService<
       return;
     }
     return pkg;
-    /* eslint-enable @typescript-eslint/no-explicit-any */
   }
 
   /**
@@ -64,7 +62,6 @@ export class VulnsService extends QueryService<
    * Does not run any mutation operations
    */
   private async unlinkFromPackage(vulnId: string) {
-    /* eslint-disable @typescript-eslint/no-explicit-any */
     // Get all packages containing vulnId
     const pkgs = await this.pkgSvc.packages
       .scan()
@@ -77,7 +74,6 @@ export class VulnsService extends QueryService<
       // Remove vulnId from vulns
       vulns: pkg.vulns.filter((vId: any) => vId !== vulnId),
     }));
-    /* eslint-enable @typescript-eslint/no-explicit-any */
   }
 
   /**
@@ -115,7 +111,6 @@ export class VulnsService extends QueryService<
    * @returns populated package
    */
   async includePackage(vulnId: string, packageId: string) {
-    /* eslint-disable @typescript-eslint/no-explicit-any */
     const [vuln, pkg] = await this.resolveEntities(vulnId, packageId);
     if (!Array.isArray(pkg.vulns)) {
       // Initialise array
@@ -130,7 +125,6 @@ export class VulnsService extends QueryService<
     const { id, ...data } = pkg;
     const updated = await this.pkgSvc.packages.update({ id }, data);
     return updated.populate();
-    /* eslint-enable @typescript-eslint/no-explicit-any */
   }
 
   /**
@@ -139,7 +133,6 @@ export class VulnsService extends QueryService<
    * @returns populated package
    */
   async excludePackage(vulnId: string, packageId: string) {
-    /* eslint-disable @typescript-eslint/no-explicit-any */
     const [vuln, pkg] = await this.resolveEntities(vulnId, packageId);
     if (!Array.isArray(pkg.vulns)) {
       // No vuln array so no need to remove
@@ -150,7 +143,6 @@ export class VulnsService extends QueryService<
     const { id, ...data } = pkg;
     const updated = await this.pkgSvc.packages.update({ id }, data);
     return updated.populate();
-    /* eslint-enable @typescript-eslint/no-explicit-any */
   }
 
   /**
