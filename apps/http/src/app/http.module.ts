@@ -22,7 +22,7 @@ const mainModule: ModuleMetadata = {
       validationSchema: Joi.object({
         DYNA_PORT: Joi.number().min(0).default(8000),
         NODE_ENV: Joi.string()
-          .valid('development', 'production')
+          .valid('development', 'production', 'test')
           .default('development'),
       }),
     }),
