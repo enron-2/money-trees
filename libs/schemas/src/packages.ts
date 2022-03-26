@@ -2,8 +2,10 @@ import { isBase64Hash, isNonEmptyString } from '@core/validator';
 import { isURL } from 'class-validator';
 import { Model } from 'dynamoose/dist/Model';
 import { Schema } from 'dynamoose/dist/Schema';
-import { v4 as uuid } from 'uuid';
+import { v4 } from 'uuid';
 import { Vulnerability } from './vulnerabilities';
+
+const uuid = v4;
 
 const requiredString = {
   type: String,
