@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Package, PackageKey } from '@schemas/packages';
 import { Project, ProjectKey } from '@schemas/projects';
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { ParserService } from '../../../parser/src/app/parser.service';
+import { ParserService } from '@money-trees/parser/parser.service';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 
 type RepoInfo = {

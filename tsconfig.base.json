@@ -23,6 +23,12 @@
       ],
       "@schemas/*": [
         "libs/schemas/src/*"
+      ],
+      "@money-trees/http/*": [
+        "apps/http/src/app/*"
+      ],
+      "@money-trees/parser/*": [
+        "apps/parser/src/app/*"
       ]
     }
   },
