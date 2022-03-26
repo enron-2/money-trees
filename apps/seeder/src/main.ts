@@ -1,8 +1,8 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import axios from 'axios';
-import { SeederModule } from './seeder.module';
-import { SeederService } from './seeder.service';
+import { SeederModule } from './app/seeder.module';
+import { SeederService } from './app/seeder.service';
 
 async function bootstrap() {
   if (!process.env.DOMAIN) throw new Error('DOMAIN not defined!');
@@ -53,7 +53,7 @@ async function bootstrap() {
         repository,
       });
       console.log(
-        `SUCCESS ${'='.repeat(process.stdout.columns - 'SUCCESS '.length)}`,
+        `SUCCESS ${'='.repeat(process.stdout.columns - 'SUCCESS '.length)}`
       );
       console.log(response);
       console.log(bars);
@@ -61,7 +61,7 @@ async function bootstrap() {
       console.log(bars);
       console.log('REPOSITORY: ', repo);
       console.log(
-        `ERROR ${'='.repeat(process.stdout.columns - 'ERROR '.length)}`,
+        `ERROR ${'='.repeat(process.stdout.columns - 'ERROR '.length)}`
       );
       console.log(error);
       console.log('> Rolling back changes');

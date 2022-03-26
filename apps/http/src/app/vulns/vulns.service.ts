@@ -1,10 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Vulnerability, VulnerabilityKey } from '@schemas/vulnerabilities';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import { v4 as uuid } from 'uuid';
+import { v4 } from 'uuid';
 import { PackagesService } from '../packages/packages.service';
 import { QueryService } from '../query-service.abstract';
 import { CreateVulnInput, UpdateVulnInput } from './vulns.dto';
+
+// nx generatePackageJson does not pickup uuid when using import aliasing
+const uuid = v4;
 
 @Injectable()
 export class VulnsService extends QueryService<
@@ -14,7 +17,7 @@ export class VulnsService extends QueryService<
   constructor(
     @InjectModel('Vuln')
     readonly vulns: Model<Vulnerability, VulnerabilityKey, 'id'>,
-    private readonly pkgSvc: PackagesService,
+    private readonly pkgSvc: PackagesService
   ) {
     super(vulns);
   }
@@ -29,7 +32,7 @@ export class VulnsService extends QueryService<
       .scan()
       .where('vulns')
       .contains(vuln.id);
-    if (!!lastKey) scanner.startAt({ id: lastKey });
+    if (lastKey) scanner.startAt({ id: lastKey });
     return scanner.exec().then((res) => res.slice(0, limit));
   }
 
@@ -39,6 +42,7 @@ export class VulnsService extends QueryService<
    * Does not run any mutation operations
    */
   private async linkToPackage(vulnId: string, packageId: string) {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const pkg = await this.pkgSvc.findOne(packageId);
     if (!pkg.vulns && !Array.isArray(pkg.vulns)) {
       // First vuln on package
@@ -51,6 +55,7 @@ export class VulnsService extends QueryService<
       return;
     }
     return pkg;
+    /* eslint-enable @typescript-eslint/no-explicit-any */
   }
 
   /**
@@ -59,6 +64,7 @@ export class VulnsService extends QueryService<
    * Does not run any mutation operations
    */
   private async unlinkFromPackage(vulnId: string) {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     // Get all packages containing vulnId
     const pkgs = await this.pkgSvc.packages
       .scan()
@@ -71,6 +77,7 @@ export class VulnsService extends QueryService<
       // Remove vulnId from vulns
       vulns: pkg.vulns.filter((vId: any) => vId !== vulnId),
     }));
+    /* eslint-enable @typescript-eslint/no-explicit-any */
   }
 
   /**
@@ -81,12 +88,12 @@ export class VulnsService extends QueryService<
     const { packageIds, ...data } = input;
     const vulnId = uuid();
     const pkgs = await Promise.all(
-      packageIds.map((id) => this.linkToPackage(vulnId, id)),
+      packageIds.map((id) => this.linkToPackage(vulnId, id))
     ).then((res) => res.filter((p) => !!p));
 
     const newVuln = this.vulns.transaction.create({ id: vulnId, ...data });
     const updatedPkgs = pkgs.map(({ id, ...data }) =>
-      this.pkgSvc.packages.transaction.update({ id }, data),
+      this.pkgSvc.packages.transaction.update({ id }, data)
     );
     await this.transaction([newVuln, ...updatedPkgs]);
 
@@ -108,6 +115,7 @@ export class VulnsService extends QueryService<
    * @returns populated package
    */
   async includePackage(vulnId: string, packageId: string) {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const [vuln, pkg] = await this.resolveEntities(vulnId, packageId);
     if (!Array.isArray(pkg.vulns)) {
       // Initialise array
@@ -122,6 +130,7 @@ export class VulnsService extends QueryService<
     const { id, ...data } = pkg;
     const updated = await this.pkgSvc.packages.update({ id }, data);
     return updated.populate();
+    /* eslint-enable @typescript-eslint/no-explicit-any */
   }
 
   /**
@@ -130,6 +139,7 @@ export class VulnsService extends QueryService<
    * @returns populated package
    */
   async excludePackage(vulnId: string, packageId: string) {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const [vuln, pkg] = await this.resolveEntities(vulnId, packageId);
     if (!Array.isArray(pkg.vulns)) {
       // No vuln array so no need to remove
@@ -140,6 +150,7 @@ export class VulnsService extends QueryService<
     const { id, ...data } = pkg;
     const updated = await this.pkgSvc.packages.update({ id }, data);
     return updated.populate();
+    /* eslint-enable @typescript-eslint/no-explicit-any */
   }
 
   /**
@@ -167,7 +178,7 @@ export class VulnsService extends QueryService<
 
     const deletedVuln = this.vulns.transaction.delete({ id });
     const updatedPkgs = pkgs.map(({ id, ...data }) =>
-      this.pkgSvc.packages.transaction.update({ id }, data),
+      this.pkgSvc.packages.transaction.update({ id }, data)
     );
     await this.transaction([...updatedPkgs, deletedVuln]);
 

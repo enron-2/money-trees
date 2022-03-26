@@ -1,7 +1,7 @@
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { DevHttpModule } from './http.module';
+import { DevHttpModule } from './app/http.module';
 
 /**
  * NOT FOR PRODUCTION
@@ -24,13 +24,11 @@ async function bootstrap() {
         />
       </div>
       <div>
-        <br>
         Not fully tested, some reponse and request may differ from what is actually documented.
-        <br>
         Repo located at: <a href="https://github.com/cs9447-team2/money-trees">enron2/money-trees</a>
       </div>
       </div>
-      `,
+      `
     )
     .setVersion('0.0.0')
     .build();
