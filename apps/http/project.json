@@ -3,6 +3,28 @@
   "sourceRoot": "apps/http/src",
   "projectType": "application",
   "targets": {
+    "packer": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "nx run http:clean-dist",
+          "nx run http:build:production",
+          "nx run http:node_modules",
+          "echo \"Bundle size: $(du -sh dist/apps/http | cut -f1)\""
+        ],
+        "parallel": false
+      }
+    },
+    "clean-dist": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "echo 'Removing dist/apps/http'",
+          "rm -rf ./dist/apps/http"
+        ],
+        "parallel": false
+      }
+    },
     "build": {
       "executor": "@nrwl/node:webpack",
       "outputs": [
@@ -20,7 +42,9 @@
       "configurations": {
         "production": {
           "optimization": true,
-          "extractLicenses": true,
+          "extractLicenses": false,
+          "verbose": true,
+          "main": "apps/http/src/index.ts",
           "inspect": false,
           "fileReplacements": [
             {
@@ -29,6 +53,20 @@
             }
           ]
         }
+      }
+    },
+    "node_modules": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "echo 'Building node_modules'",
+          "cp package-lock.json ./dist/apps/http/package-lock.json",
+          "echo 'Installing production dependencies'",
+          "cd ./dist/apps/http && npm ci --production",
+          "echo 'Removing aws-sdk, already exists in lambda runtime'",
+          "rm -r ./dist/apps/http/node_modules/aws-sdk"
+        ],
+        "parallel": false
       }
     },
     "serve": {

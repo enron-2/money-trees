@@ -3,19 +3,47 @@
   "sourceRoot": "apps/parser/src",
   "projectType": "application",
   "targets": {
+    "packer": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "nx run parser:clean-dist",
+          "nx run parser:build:production",
+          "nx run parser:node_modules",
+          "echo \"Bundle size: $(du -sh dist/apps/parser | cut -f1)\""
+        ],
+        "parallel": false
+      }
+    },
+    "clean-dist": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "echo 'Removing dist/apps/parser'",
+          "rm -rf ./dist/apps/parser"
+        ],
+        "parallel": false
+      }
+    },
     "build": {
       "executor": "@nrwl/node:webpack",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/apps/parser",
         "main": "apps/parser/src/main.ts",
         "tsConfig": "apps/parser/tsconfig.app.json",
-        "assets": ["apps/parser/src/assets"]
+        "generatePackageJson": true,
+        "assets": [
+          "apps/parser/src/assets"
+        ]
       },
       "configurations": {
         "production": {
           "optimization": true,
-          "extractLicenses": true,
+          "extractLicenses": false,
+          "verbose": true,
           "inspect": false,
           "fileReplacements": [
             {
@@ -26,6 +54,20 @@
         }
       }
     },
+    "node_modules": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "echo 'Building node_modules'",
+          "cp package-lock.json ./dist/apps/parser/package-lock.json",
+          "echo 'Installing production dependencies'",
+          "cd ./dist/apps/parser && npm ci --production",
+          "echo 'Removing aws-sdk, already exists in lambda runtime'",
+          "rm -r ./dist/apps/parser/node_modules/aws-sdk"
+        ],
+        "parallel": false
+      }
+    },
     "serve": {
       "executor": "@nrwl/node:node",
       "options": {
@@ -34,14 +76,20 @@
     },
     "lint": {
       "executor": "@nrwl/linter:eslint",
-      "outputs": ["{options.outputFile}"],
+      "outputs": [
+        "{options.outputFile}"
+      ],
       "options": {
-        "lintFilePatterns": ["apps/parser/**/*.ts"]
+        "lintFilePatterns": [
+          "apps/parser/**/*.ts"
+        ]
       }
     },
     "test": {
       "executor": "@nrwl/jest:jest",
-      "outputs": ["coverage/apps/parser"],
+      "outputs": [
+        "coverage/apps/parser"
+      ],
       "options": {
         "jestConfig": "apps/parser/jest.config.js",
         "passWithNoTests": true
