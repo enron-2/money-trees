@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Vulnerability, VulnerabilityKey } from '@schemas/vulnerabilities';
+import { instanceToPlain, plainToInstance } from 'class-transformer';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { v4 } from 'uuid';
 import { PackagesService } from '../packages/packages.service';
@@ -103,7 +104,17 @@ export class VulnsService extends QueryService<
   async update(id: string, input: UpdateVulnInput) {
     const exists = await this.vulns.get({ id });
     if (!exists) throw new NotFoundException();
-    return this.vulns.update({ id }, { ...exists, ...input });
+    const newData = plainToInstance(
+      UpdateVulnInput,
+      {
+        ...exists,
+        ...instanceToPlain(input, { exposeUnsetFields: false }),
+      },
+      {
+        excludeExtraneousValues: true,
+      }
+    );
+    return this.vulns.update({ id }, newData);
   }
 
   /**
