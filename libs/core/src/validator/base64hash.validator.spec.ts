@@ -65,4 +65,24 @@ describe('Base64 Hash String Validator', () => {
     ]);
     expect(input.map((i) => validator.validateSync(i)).flat().length).toBe(3);
   });
+
+  it('Not a string', () => {
+    const { sha1, sha256, sha512 } = hasher;
+    const input = plainToInstance(AnyHash, [
+      { field: sha1().update('yeet me 10ft').digest() },
+      { field: sha256().update('yeet me 10ft').digest() },
+      { field: sha512().update('yeet me 10ft').digest() },
+    ]);
+    expect(input.map((i) => validator.validateSync(i)).flat().length).toBe(3);
+  });
+
+  it('Unknown base64 hash', () => {
+    const { sha1, sha256, sha512 } = hasher;
+    const input = plainToInstance(AnyHash, [
+      { field: sha1().update('yeet me 10ft').digest('base64') },
+      { field: sha256().update('yeet me 10ft').digest('base64') },
+      { field: sha512().update('yeet me 10ft').digest('base64') },
+    ]);
+    expect(input.map((i) => validator.validateSync(i)).flat().length).toBe(3);
+  });
 });
