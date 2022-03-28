@@ -53,6 +53,14 @@ $ npm run test
 $ npm run test:clean
 ```
 
+### Coverage
+- Runs all available tests with coverage report
+```bash
+$ npm run test:coverage
+```
+- To run without hitting the cache, use: `npm run test:coverage -- --skip-nx-cache`
+- Coverage reports are generated in `coverage` directory
+
 ### End-to-end
 - Only for http module
 ```bash
