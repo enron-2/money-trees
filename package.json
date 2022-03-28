@@ -4,9 +4,10 @@
   "license": "MIT",
   "scripts": {
     "start:http": "nx serve http",
-    "test": "nx run-many --target=test --all --parallel=1 --verbose",
+    "test": "nx run-many --target=test --all --parallel=1",
+    "test:coverage": "nx run-many --target=test --all --parallel=1 --coverage",
     "test:e2e": "nx test --test-file ./apps/http/e2e/app.spec.ts",
-    "test:clean": "nx run-many --target=test --all --parallel=1 --verbose --skip-nx-cache",
+    "test:clean": "nx run-many --target=test --all --parallel=1 --skip-nx-cache",
     "seed": "nx serve seeder",
     "lint": "nx run-many --target=lint --all --parallel=1 --verbose",
     "build": "nx run-many --target=packer --projects=parser,http"
