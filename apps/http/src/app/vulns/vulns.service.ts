@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Vulnerability, VulnerabilityKey } from '@schemas/vulnerabilities';
+import { instanceToPlain, plainToInstance } from 'class-transformer';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import { v4 as uuid } from 'uuid';
+import { v4 } from 'uuid';
 import { PackagesService } from '../packages/packages.service';
 import { QueryService } from '../query-service.abstract';
 import { CreateVulnInput, UpdateVulnInput } from './vulns.dto';
+
+// nx generatePackageJson does not pickup uuid when using import aliasing
+const uuid = v4;
 
 @Injectable()
 export class VulnsService extends QueryService<
@@ -14,7 +18,7 @@ export class VulnsService extends QueryService<
   constructor(
     @InjectModel('Vuln')
     readonly vulns: Model<Vulnerability, VulnerabilityKey, 'id'>,
-    private readonly pkgSvc: PackagesService,
+    private readonly pkgSvc: PackagesService
   ) {
     super(vulns);
   }
@@ -29,7 +33,7 @@ export class VulnsService extends QueryService<
       .scan()
       .where('vulns')
       .contains(vuln.id);
-    if (!!lastKey) scanner.startAt({ id: lastKey });
+    if (lastKey) scanner.startAt({ id: lastKey });
     return scanner.exec().then((res) => res.slice(0, limit));
   }
 
@@ -81,12 +85,12 @@ export class VulnsService extends QueryService<
     const { packageIds, ...data } = input;
     const vulnId = uuid();
     const pkgs = await Promise.all(
-      packageIds.map((id) => this.linkToPackage(vulnId, id)),
+      packageIds.map((id) => this.linkToPackage(vulnId, id))
     ).then((res) => res.filter((p) => !!p));
 
     const newVuln = this.vulns.transaction.create({ id: vulnId, ...data });
     const updatedPkgs = pkgs.map(({ id, ...data }) =>
-      this.pkgSvc.packages.transaction.update({ id }, data),
+      this.pkgSvc.packages.transaction.update({ id }, data)
     );
     await this.transaction([newVuln, ...updatedPkgs]);
 
@@ -100,7 +104,17 @@ export class VulnsService extends QueryService<
   async update(id: string, input: UpdateVulnInput) {
     const exists = await this.vulns.get({ id });
     if (!exists) throw new NotFoundException();
-    return this.vulns.update({ id }, { ...exists, ...input });
+    const newData = plainToInstance(
+      UpdateVulnInput,
+      {
+        ...exists,
+        ...instanceToPlain(input, { exposeUnsetFields: false }),
+      },
+      {
+        excludeExtraneousValues: true,
+      }
+    );
+    return this.vulns.update({ id }, newData);
   }
 
   /**
@@ -167,7 +181,7 @@ export class VulnsService extends QueryService<
 
     const deletedVuln = this.vulns.transaction.delete({ id });
     const updatedPkgs = pkgs.map(({ id, ...data }) =>
-      this.pkgSvc.packages.transaction.update({ id }, data),
+      this.pkgSvc.packages.transaction.update({ id }, data)
     );
     await this.transaction([...updatedPkgs, deletedVuln]);
 

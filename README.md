@@ -49,9 +49,17 @@ $ npm install
 # unit tests
 $ npm run test
 
-# test coverage
-$ npm run test:cov
+# unit tests w/o cache
+$ npm run test:clean
 ```
+
+### Coverage
+- Runs all available tests with coverage report
+```bash
+$ npm run test:coverage
+```
+- To run without hitting the cache, use: `npm run test:coverage -- --skip-nx-cache`
+- Coverage reports are generated in `coverage` directory
 
 ### End-to-end
 - Only for http module
@@ -60,23 +68,22 @@ $ npm run test:cov
 docker-compose up -d
 
 # Run script
-npm run test:e2e:http
+npm run test:e2e
 
 # Stop docker
 docker-compose down
 ```
 
 ## Building/compiling
-All of these steps still requires `node_modules` folder
 ```bash
-# build http lambda
-npm run build:prod http
+# build all
+# bundles node_modules in dist
+npm run build
 
-# build parser lambda
-npm run build:prod parser
+# build specific target with node_modules
+nx run (http|parser):packer
 ```
-- Requires the `:prod` suffix, it uses the production cli configs
-- Changes `projects.http.entryFile` to `index`, since its the lambda's entry point
+- Refer to `apps/**/project.json` for more commands
 
 ## Support
 - ?????

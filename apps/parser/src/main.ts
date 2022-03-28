@@ -2,8 +2,8 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Handler, S3CreateEvent } from 'aws-lambda';
 import { S3 } from 'aws-sdk';
-import { ParserModule } from './parser.module';
-import { ParserService } from './parser.service';
+import { ParserModule } from './app/parser.module';
+import { ParserService } from './app/parser.service';
 
 export const parserHandler: Handler = async (event: S3CreateEvent) => {
   const app = await NestFactory.createApplicationContext(ParserModule);
@@ -29,7 +29,7 @@ export const parserHandler: Handler = async (event: S3CreateEvent) => {
         owner,
         name,
       });
-    }),
+    })
   );
 
   await app.close();

@@ -1,9 +1,11 @@
-import { v4 as uuid } from 'uuid';
+import { v4 } from 'uuid';
 import { Schema } from 'dynamoose/dist/Schema';
 import { isNonEmptyString } from '@core/validator';
 import { isURL } from 'class-validator';
 import { Model } from 'dynamoose/dist/Model';
 import { Package } from './packages';
+
+const uuid = v4;
 
 export function createProjectSchema(packageModel: Model): Schema {
   return new Schema({

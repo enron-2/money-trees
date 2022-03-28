@@ -1,7 +1,9 @@
-import { v4 as uuid } from 'uuid';
+import { v4 } from 'uuid';
 import { Schema } from 'dynamoose/dist/Schema';
 import { isNonEmptyString } from '@core/validator';
 import { isInt } from 'class-validator';
+
+const uuid = v4;
 
 export const createVulnerabilitySchema = (): Schema =>
   new Schema({

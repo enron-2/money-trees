@@ -1,0 +1,101 @@
+{
+  "root": "apps/http",
+  "sourceRoot": "apps/http/src",
+  "projectType": "application",
+  "targets": {
+    "packer": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "nx run http:clean-dist",
+          "nx run http:build:production",
+          "nx run http:node_modules",
+          "echo \"Bundle size: $(du -sh dist/apps/http | cut -f1)\""
+        ],
+        "parallel": false
+      }
+    },
+    "clean-dist": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "echo 'Removing dist/apps/http'",
+          "rm -rf ./dist/apps/http"
+        ],
+        "parallel": false
+      }
+    },
+    "build": {
+      "executor": "@nrwl/node:webpack",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "options": {
+        "outputPath": "dist/apps/http",
+        "main": "apps/http/src/main.ts",
+        "tsConfig": "apps/http/tsconfig.app.json",
+        "generatePackageJson": true,
+        "assets": [
+          "apps/http/src/assets"
+        ]
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": false,
+          "verbose": true,
+          "main": "apps/http/src/index.ts",
+          "inspect": false,
+          "fileReplacements": [
+            {
+              "replace": "apps/http/src/environments/environment.ts",
+              "with": "apps/http/src/environments/environment.prod.ts"
+            }
+          ]
+        }
+      }
+    },
+    "node_modules": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "echo 'Building node_modules'",
+          "cp package-lock.json ./dist/apps/http/package-lock.json",
+          "echo 'Installing production dependencies'",
+          "cd ./dist/apps/http && npm ci --production",
+          "echo 'Removing aws-sdk, already exists in lambda runtime'",
+          "rm -r ./dist/apps/http/node_modules/aws-sdk"
+        ],
+        "parallel": false
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/node:node",
+      "options": {
+        "buildTarget": "http:build"
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": [
+        "{options.outputFile}"
+      ],
+      "options": {
+        "lintFilePatterns": [
+          "apps/http/**/*.ts"
+        ]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": [
+        "coverage/apps/http"
+      ],
+      "options": {
+        "jestConfig": "apps/http/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

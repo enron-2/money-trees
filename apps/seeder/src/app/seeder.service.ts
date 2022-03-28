@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Package, PackageKey } from '@schemas/packages';
 import { Project, ProjectKey } from '@schemas/projects';
-import { ParserService } from 'apps/parser/src/parser.service';
+import { ParserService } from '@money-trees/parser/parser.service';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 
 type RepoInfo = {
@@ -16,7 +16,7 @@ export class SeederService {
     @InjectModel('Package')
     readonly pkg: Model<Package, PackageKey, 'id'>,
     @InjectModel('Project')
-    readonly prj: Model<Project, ProjectKey, 'id'>,
+    readonly prj: Model<Project, ProjectKey, 'id'>
   ) {
     this.parserSvc = new ParserService(pkg, prj);
   }
@@ -27,7 +27,7 @@ export class SeederService {
       {
         owner: repoInfo.owner,
         name: repoInfo.repository,
-      },
+      }
     );
   }
 }

@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "projects": {
+    "core": "libs/core",
+    "http": "apps/http",
+    "parser": "apps/parser",
+    "schemas": "libs/schemas",
+    "seeder": "apps/seeder"
+  }
+}

@@ -5,7 +5,7 @@ import * as express from 'express';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { createServer, proxy } from 'aws-serverless-express';
 import { APIGatewayProxyEvent, Context } from 'aws-lambda';
-import { HttpModule } from './http.module';
+import { HttpModule } from './app/http.module';
 
 let server: Server;
 
