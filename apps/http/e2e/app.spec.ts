@@ -14,6 +14,8 @@ import { HttpModule } from '../src/app/http.module';
 describe('HttpController (e2e)', () => {
   let app: INestApplication;
 
+  jest.setTimeout(5 * 60000);
+
   beforeAll(async () => {
     try {
       console.time('SEEDER');
