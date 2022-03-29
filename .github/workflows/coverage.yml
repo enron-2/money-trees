@@ -14,13 +14,18 @@ jobs:
       - uses: actions/checkout@v2
       - name: Running dynamodb in container
         run: docker-compose up -d
-      - name: Install dependencies
+      - name: Setup node 14
         uses: actions/setup-node@v2
         with:
           node-version: '14'
-      - run: |
-          npm ci
-          npm run test:coverage
+      - name: Installing dependencies
+        run: npm ci
+      - name: Run tests
+        env:
+          JEST_TIMEOUT: 60000
+        run: npm run test:coverage
+      - name: Stopping dynamodb container
+        run: docker-compose down
       - name: Upload to Codecov
         uses: codecov/codecov-action@v2
         with:
