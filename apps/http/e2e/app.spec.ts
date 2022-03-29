@@ -14,19 +14,22 @@ import { HttpModule } from '../src/app/http.module';
 describe('HttpController (e2e)', () => {
   let app: INestApplication;
 
-  beforeAll(async () => {
-    try {
-      console.time('SEEDER');
-      execSync('npm run seed');
-      console.timeEnd('SEEDER');
-    } catch (e) {
-      console.log(
-        `ERROR ${'='.repeat(process.stdout.columns - 'ERROR '.length)}`
-      );
-      console.log(e);
-      console.log('='.repeat(process.stdout.columns));
-    }
-  }, 30000);
+  beforeAll(
+    async () => {
+      try {
+        console.time('SEEDER');
+        execSync('npm run seed');
+        console.timeEnd('SEEDER');
+      } catch (e) {
+        console.log(
+          `ERROR ${'='.repeat(process.stdout.columns - 'ERROR '.length)}`
+        );
+        console.log(e);
+        console.log('='.repeat(process.stdout.columns));
+      }
+    },
+    isNaN(+process.env.JEST_TIMEOUT) ? 30000 : +process.env.JEST_TIMEOUT
+  );
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
