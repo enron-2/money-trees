@@ -26,7 +26,7 @@ describe('HttpController (e2e)', () => {
       console.log(e);
       console.log('='.repeat(process.stdout.columns));
     }
-  }, 60000 * 2);
+  }, 5 * 60000);
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({

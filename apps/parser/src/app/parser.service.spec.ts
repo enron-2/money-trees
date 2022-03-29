@@ -89,7 +89,7 @@ describe('Parser module', () => {
       prjs = await svc.prj.scan().limit(10).exec();
     }
     console.log(`Deleted ${pkgCount} packages\nDeleted ${prjCount} projects`);
-  }, 30000);
+  }, 5 * 60000);
 
   it('Should be defined', () => {
     expect(svc).toBeDefined();
@@ -203,5 +203,5 @@ describe('Parser module', () => {
       prjs = await svc.prj.scan().limit(10).exec();
     }
     console.log(`Deleted ${pkgCount} packages\nDeleted ${prjCount} projects`);
-  }, 30000);
+  }, 5 * 60000);
 });
