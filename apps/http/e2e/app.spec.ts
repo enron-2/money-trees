@@ -14,6 +14,8 @@ import { HttpModule } from '../src/app/http.module';
 describe('HttpController (e2e)', () => {
   let app: INestApplication;
 
+  jest.setTimeout(5 * 60000);
+
   beforeAll(async () => {
     try {
       console.time('SEEDER');
@@ -26,7 +28,7 @@ describe('HttpController (e2e)', () => {
       console.log(e);
       console.log('='.repeat(process.stdout.columns));
     }
-  }, 30000);
+  }, 5 * 60000);
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -151,8 +153,9 @@ describe('HttpController (e2e)', () => {
         .get('/projects')
         .query({ limit: 5 })
         .expect(200);
-      const secondLastKey = (body as Array<any>).at(-2).id;
-      const lastKey = (body as Array<any>).at(-1).id;
+      const len = body?.length;
+      const secondLastKey = body?.[len - 2]?.id;
+      const lastKey = body?.[len - 1]?.id;
       const { body: body_1 } = await request(app.getHttpServer())
         .get('/projects')
         .query({ lastKey: secondLastKey })
