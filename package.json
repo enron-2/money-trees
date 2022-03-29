@@ -11,7 +11,8 @@
     "seed": "nx serve seeder",
     "lint": "nx run-many --target=lint --all --parallel=1 --verbose",
     "build": "nx run-many --target=packer --projects=parser,http",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "commit": "cz"
   },
   "private": true,
   "dependencies": {
