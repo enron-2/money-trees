@@ -22,7 +22,9 @@ jobs:
         run: npm ci
       - name: Run tests
         env:
-          JEST_TIMEOUT: 60000
+          AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+          AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          AWS_DEFAULT_REGION: ap-southeast-2
         run: npm run test:coverage
       - name: Stopping dynamodb container
         run: docker-compose down
