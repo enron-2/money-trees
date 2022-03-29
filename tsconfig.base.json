@@ -10,30 +10,16 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": [
-      "es2017",
-      "dom"
-    ],
+    "lib": ["es2017", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@core/*": [
-        "libs/core/src/*"
-      ],
-      "@schemas/*": [
-        "libs/schemas/src/*"
-      ],
-      "@money-trees/http/*": [
-        "apps/http/src/app/*"
-      ],
-      "@money-trees/parser/*": [
-        "apps/parser/src/app/*"
-      ]
+      "@core/*": ["libs/core/src/*"],
+      "@money-trees/http/*": ["apps/http/src/app/*"],
+      "@money-trees/parser/*": ["apps/parser/src/app/*"],
+      "@schemas/*": ["libs/schemas/src/*"]
     }
   },
-  "exclude": [
-    "node_modules",
-    "tmp"
-  ]
+  "exclude": ["node_modules", "tmp"]
 }
