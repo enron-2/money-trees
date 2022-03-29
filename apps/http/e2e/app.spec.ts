@@ -11,25 +11,24 @@ import { isUUID } from 'class-validator';
 import { v4 as uuid } from 'uuid';
 import { HttpModule } from '../src/app/http.module';
 
+jest.setTimeout(60000);
+
 describe('HttpController (e2e)', () => {
   let app: INestApplication;
 
-  beforeAll(
-    async () => {
-      try {
-        console.time('SEEDER');
-        execSync('npm run seed');
-        console.timeEnd('SEEDER');
-      } catch (e) {
-        console.log(
-          `ERROR ${'='.repeat(process.stdout.columns - 'ERROR '.length)}`
-        );
-        console.log(e);
-        console.log('='.repeat(process.stdout.columns));
-      }
-    },
-    isNaN(+process.env.JEST_TIMEOUT) ? 30000 : +process.env.JEST_TIMEOUT
-  );
+  beforeAll(async () => {
+    try {
+      console.time('SEEDER');
+      execSync('npm run seed');
+      console.timeEnd('SEEDER');
+    } catch (e) {
+      console.log(
+        `ERROR ${'='.repeat(process.stdout.columns - 'ERROR '.length)}`
+      );
+      console.log(e);
+      console.log('='.repeat(process.stdout.columns));
+    }
+  });
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
