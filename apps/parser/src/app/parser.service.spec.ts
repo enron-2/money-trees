@@ -53,8 +53,6 @@ const deletedLockContents = `
 }
 `;
 
-jest.setTimeout(30000);
-
 describe('Parser module', () => {
   let svc: ParserService;
 
@@ -91,7 +89,7 @@ describe('Parser module', () => {
       prjs = await svc.prj.scan().limit(10).exec();
     }
     console.log(`Deleted ${pkgCount} packages\nDeleted ${prjCount} projects`);
-  });
+  }, 30000);
 
   it('Should be defined', () => {
     expect(svc).toBeDefined();
@@ -205,5 +203,5 @@ describe('Parser module', () => {
       prjs = await svc.prj.scan().limit(10).exec();
     }
     console.log(`Deleted ${pkgCount} packages\nDeleted ${prjCount} projects`);
-  });
+  }, 30000);
 });

@@ -11,8 +11,6 @@ import { isUUID } from 'class-validator';
 import { v4 as uuid } from 'uuid';
 import { HttpModule } from '../src/app/http.module';
 
-jest.setTimeout(60000);
-
 describe('HttpController (e2e)', () => {
   let app: INestApplication;
 
@@ -28,7 +26,7 @@ describe('HttpController (e2e)', () => {
       console.log(e);
       console.log('='.repeat(process.stdout.columns));
     }
-  });
+  }, 60000 * 2);
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
