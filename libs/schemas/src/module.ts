@@ -3,19 +3,20 @@ import { DynamooseModule } from 'nestjs-dynamoose';
 import { createPackageSchema } from './packages';
 import { createProjectSchema } from './projects';
 import { createVulnerabilitySchema } from './vulnerabilities';
+import { Package, Project, Vuln } from './tablenames';
 
 const dynamoose = DynamooseModule.forFeatureAsync([
   {
-    name: 'Vuln',
+    name: Vuln,
     useFactory: () => createVulnerabilitySchema(),
   },
   {
-    name: 'Package',
+    name: Package,
     inject: ['VulnModel'],
     useFactory: (_, model) => createPackageSchema(model),
   },
   {
-    name: 'Project',
+    name: Project,
     inject: ['PackageModel'],
     useFactory: (_, model) => createProjectSchema(model),
   },
