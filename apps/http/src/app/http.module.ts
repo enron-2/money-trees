@@ -1,13 +1,11 @@
 import { Global, Logger, Module, ModuleMetadata } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { SchemaModule } from '@schemas/module';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import * as Joi from 'joi';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import { PackagesModule } from './packages/packages.module';
 import { ProjectsModule } from './projects/projects.module';
 import { VulnsModule } from './vulns/vulns.module';
-import { join } from 'path';
 
 const logger = new Logger('DynamoDB');
 
@@ -15,7 +13,7 @@ const logger = new Logger('DynamoDB');
 @Module({ imports: [SchemaModule], exports: [SchemaModule] })
 export class GlobalSchema {}
 
-const mainModule: ModuleMetadata = {
+export const MainModule: ModuleMetadata = {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
@@ -40,21 +38,5 @@ const mainModule: ModuleMetadata = {
   ],
 };
 
-@Module(mainModule)
+@Module(MainModule)
 export class HttpModule {}
-
-/**
- * Same with HttpModule, but serve static asssets, use only in dev
- * Only for modules that's not in use in production
- */
-@Module({
-  ...mainModule,
-  imports: [
-    ...mainModule.imports,
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', '..', 'assets'),
-      serveRoot: '/assets',
-    }),
-  ],
-})
-export class DevHttpModule {}
