@@ -33,6 +33,7 @@ export class HttpStack extends Stack {
       ...lambdaConfig,
       environment: {
         NODE_ENV: 'production',
+        NO_COLOR: 'true',
       },
     });
 

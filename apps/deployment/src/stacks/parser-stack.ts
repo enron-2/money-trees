@@ -34,6 +34,7 @@ export class ParserStack extends Stack {
         NODE_ENV: 'production',
         DOMAIN: 'domain-name', // TODO: get actual domain name
         REGION: this.region,
+        NO_COLOR: 'true',
       },
     });
 
