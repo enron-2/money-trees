@@ -37,8 +37,7 @@ export class ParserStack extends Stack {
       },
     });
 
-    database.grantRead(parserLambda, 'Package');
-    database.grantRead(parserLambda, 'Project');
+    database.grantReadAll(parserLambda);
     database.grantWrite(parserLambda, 'Package');
     database.grantWrite(parserLambda, 'Project');
 
@@ -51,5 +50,6 @@ export class ParserStack extends Stack {
     bucket.addObjectCreatedNotification(
       new s3n.LambdaDestination(parserLambda)
     );
+    bucket.grantRead(parserLambda);
   }
 }
