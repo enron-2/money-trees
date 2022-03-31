@@ -25,7 +25,7 @@ export const MainModule: ModuleMetadata = {
       }),
     }),
     process.env.NODE_ENV === 'production'
-      ? DynamooseModule.forRoot({ aws: { region: process.env.REGION }, logger })
+      ? DynamooseModule.forRoot({ logger })
       : DynamooseModule.forRoot({
           local: true,
           aws: { region: 'local' },
