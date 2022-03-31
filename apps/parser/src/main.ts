@@ -5,7 +5,7 @@ import { S3 } from 'aws-sdk';
 import { ParserModule } from './app/parser.module';
 import { ParserService } from './app/parser.service';
 
-export const parserHandler: Handler = async (event: S3CreateEvent) => {
+export const handler: Handler = async (event: S3CreateEvent) => {
   const app = await NestFactory.createApplicationContext(ParserModule);
   const parser = app.get(ParserService);
   const s3 = new S3({ logger: new Logger('aws-sdk/S3') });
