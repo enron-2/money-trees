@@ -1,7 +1,29 @@
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import {
+  ClassSerializerInterceptor,
+  Module,
+  ValidationPipe,
+} from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { DevHttpModule } from './app/http.module';
+import { join } from 'path';
+import { MainModule } from './app/http.module';
+
+/**
+ * Same with HttpModule, but serve static asssets, use only in dev
+ * Only for modules that's not in use in production
+ */
+@Module({
+  ...MainModule,
+  imports: [
+    ...MainModule.imports,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', '..', 'assets'),
+      serveRoot: '/assets',
+    }),
+  ],
+})
+export class DevHttpModule {}
 
 /**
  * NOT FOR PRODUCTION
@@ -17,7 +39,7 @@ async function bootstrap() {
       <br>
       <div id=content>
       <div id=enron>
-        <img 
+        <img
           src="/assets/enron.gif"
           width="160"
           alt="Enron logo"

@@ -1,0 +1,52 @@
+{
+  "root": "apps/deployment",
+  "projectType": "application",
+  "sourceRoot": "apps/deployment/src",
+  "targets": {
+    "deploy": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": ["(cd ../../; npm run build)", "npx cdk deploy --all"],
+        "parallel": false,
+        "cwd": "apps/deployment"
+      }
+    },
+    "destroy": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": ["npx cdk destroy --all"],
+        "cwd": "apps/deployment"
+      }
+    },
+    "synth": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": ["npx cdk synth"],
+        "cwd": "apps/deployment"
+      }
+    },
+    "bootstrap": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": ["npx cdk bootstrap"],
+        "cwd": "apps/deployment"
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/deployment/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/apps/deployment"],
+      "options": {
+        "jestConfig": "apps/deployment/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}
