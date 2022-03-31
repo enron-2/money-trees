@@ -19,6 +19,20 @@ export class DatabaseStack extends Stack {
         tableName: t,
       });
     }
+    this.Tables.Package.addGlobalSecondaryIndex({
+      indexName: 'checksumIndex',
+      partitionKey: {
+        name: 'checksum',
+        type: AttributeType.STRING,
+      },
+    });
+    this.Tables.Project.addGlobalSecondaryIndex({
+      indexName: 'urlIndex',
+      partitionKey: {
+        name: 'url',
+        type: AttributeType.STRING,
+      },
+    });
   }
 
   grantRead(entity: IGrantable, resource: keyof ITables) {
