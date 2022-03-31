@@ -1,5 +1,6 @@
-import { Stack, StackProps, Construct } from '@aws-cdk/core';
+import { Stack, StackProps, Construct, CfnOutput } from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
+import * as apiGw from '@aws-cdk/aws-apigateway';
 import { join } from 'path';
 import { DatabaseStack } from './database-stack';
 
@@ -9,6 +10,8 @@ interface HttpStackProp extends StackProps {
 }
 
 export class HttpStack extends Stack {
+  apiURL: string;
+
   constructor(scope: Construct, id: string, props: HttpStackProp) {
     const { database, lambdaConfig, ...stackProps } = props;
     super(scope, id, stackProps);
@@ -37,19 +40,15 @@ export class HttpStack extends Stack {
     database.grantWrite(httpLambda, 'Package');
     database.grantWrite(httpLambda, 'Vuln');
 
-    // FIX: Not working, integration created but not linked to lambda (cdk error)
-    // After manually linking them together, still errors out
-    // Should be a 'REST' api instead of HTTP (still {proxy+})
+    const api = new apiGw.LambdaRestApi(this, 'RESTEndpoint', {
+      handler: httpLambda,
+      proxy: true,
+    });
 
-    // const api = new HttpApi(this, 'HttpEndpoint');
-    // const proxyIntegration = new HttpUrlIntegration('HttpProxy', api.url);
-    // api.addRoutes({
-    //   path: '/{proxy+}',
-    //   integration: proxyIntegration,
-    // });
+    new CfnOutput(this, 'API URL', {
+      value: api.url ?? 'ERROR: No URL allocated',
+    });
 
-    // new CfnOutput(this, 'API URL', {
-    //   value: api.url ?? 'ERROR: No URL allocated',
-    // });
+    this.apiURL = api.url;
   }
 }
