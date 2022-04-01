@@ -7,9 +7,6 @@ on:
       - synchronize
     branches:
       - main
-  push:
-    branches:
-      - main
 
 jobs:
   lint:
@@ -34,6 +31,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: nrwl/nx-set-shas@v2
       - name: Running dynamodb in container
         run: docker-compose up -d
       - name: Setup node 14
@@ -47,11 +47,6 @@ jobs:
           AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
           AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
           AWS_DEFAULT_REGION: ap-southeast-2
-        run: npm run test:coverage
+        run: npx nx affected:test
       - name: Stopping dynamodb container
         run: docker-compose down
-      - name: Upload to Codecov
-        uses: codecov/codecov-action@v2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          directory: coverage

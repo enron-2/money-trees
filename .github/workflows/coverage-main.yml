@@ -1,0 +1,50 @@
+name: Test and report coverage
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: nrwl/nx-set-shas@v2
+      - run: |
+          echo "BASE: ${{ env.NX_BASE }}"
+          echo "HEAD: ${{ env.NX_HEAD }}"
+      - name: Setup node 14
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Installing dependencies
+        run: npm ci
+      - run: npx nx affected:lint
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Running dynamodb in container
+        run: docker-compose up -d
+      - name: Setup node 14
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Installing dependencies
+        run: npm ci
+      - name: Run tests
+        env:
+          AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+          AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          AWS_DEFAULT_REGION: ap-southeast-2
+        run: npm run test:coverage
+      - name: Stopping dynamodb container
+        run: docker-compose down
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: coverage
