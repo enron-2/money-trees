@@ -4,15 +4,15 @@ import * as s3 from '@aws-cdk/aws-s3';
 import * as s3n from '@aws-cdk/aws-s3-notifications';
 import { DatabaseStack } from './database-stack';
 import { join } from 'path';
+import { NodeLambdaFunc } from '../constructs';
 
 interface ParserStackProp extends StackProps {
   database: DatabaseStack;
-  lambdaConfig: Partial<lambda.FunctionProps>;
 }
 
 export class ParserStack extends Stack {
   constructor(scope: Construct, id: string, props: ParserStackProp) {
-    const { database, lambdaConfig, ...stackProps } = props;
+    const { database, ...stackProps } = props;
     super(scope, id, stackProps);
 
     const pathToCode = join(
@@ -25,18 +25,13 @@ export class ParserStack extends Stack {
       'apps',
       'parser'
     );
-    const parserLambda = new lambda.Function(this, 'ParserHandlerFunc', {
-      runtime: lambda.Runtime.NODEJS_14_X,
-      handler: 'main.handler',
+
+    const parserLambda = new NodeLambdaFunc(this, 'ParserHandlerFunc', {
       code: lambda.Code.fromAsset(pathToCode),
-      ...lambdaConfig,
       environment: {
-        NODE_ENV: 'production',
-        DOMAIN: 'domain-name', // TODO: get actual domain name
-        REGION: this.region,
-        NO_COLOR: 'true',
+        DOMAIN: 'enron2',
       },
-    });
+    }).LambdaFunction;
 
     database.grantReadAll(parserLambda);
     database.grantWrite(parserLambda, 'Package');
@@ -48,7 +43,8 @@ export class ParserStack extends Stack {
       // TODO: handle access control to allow uploads from certain sources
       bucketName: 'lock-file-bucket',
     });
-    bucket.addObjectCreatedNotification(
+    bucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
       new s3n.LambdaDestination(parserLambda)
     );
     bucket.grantRead(parserLambda);

@@ -3,17 +3,17 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import * as apiGw from '@aws-cdk/aws-apigateway';
 import { join } from 'path';
 import { DatabaseStack } from './database-stack';
+import { NodeLambdaFunc } from '../constructs';
 
 interface HttpStackProp extends StackProps {
   database: DatabaseStack;
-  lambdaConfig: Partial<lambda.FunctionProps>;
 }
 
 export class HttpStack extends Stack {
   apiURL: string;
 
   constructor(scope: Construct, id: string, props: HttpStackProp) {
-    const { database, lambdaConfig, ...stackProps } = props;
+    const { database, ...stackProps } = props;
     super(scope, id, stackProps);
 
     const pathToCode = join(
@@ -26,16 +26,10 @@ export class HttpStack extends Stack {
       'apps',
       'http'
     );
-    const httpLambda = new lambda.Function(this, 'HttpHandlerFunc', {
-      runtime: lambda.Runtime.NODEJS_14_X,
-      handler: 'main.handler',
+
+    const httpLambda = new NodeLambdaFunc(this, 'HttpHandlerFunc', {
       code: lambda.Code.fromAsset(pathToCode),
-      ...lambdaConfig,
-      environment: {
-        NODE_ENV: 'production',
-        NO_COLOR: 'true',
-      },
-    });
+    }).LambdaFunction;
 
     database.grantReadAll(httpLambda);
     database.grantWrite(httpLambda, 'Package');
