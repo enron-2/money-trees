@@ -31,10 +31,6 @@ export class HttpStack extends Stack {
       handler: 'main.handler',
       code: lambda.Code.fromAsset(pathToCode),
       ...lambdaConfig,
-      environment: {
-        NODE_ENV: 'production',
-        NO_COLOR: 'true',
-      },
     });
 
     database.grantReadAll(httpLambda);

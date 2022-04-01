@@ -31,10 +31,8 @@ export class ParserStack extends Stack {
       code: lambda.Code.fromAsset(pathToCode),
       ...lambdaConfig,
       environment: {
-        NODE_ENV: 'production',
-        DOMAIN: 'domain-name', // TODO: get actual domain name
-        REGION: this.region,
-        NO_COLOR: 'true',
+        ...lambdaConfig.environment,
+        DOMAIN: 'enron2',
       },
     });
 

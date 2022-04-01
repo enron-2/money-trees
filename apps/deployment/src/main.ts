@@ -9,6 +9,10 @@ const env: Environment = {
 const lambdaConfig: Partial<FunctionProps> = {
   memorySize: 256,
   timeout: Duration.seconds(5),
+  environment: {
+    NODE_ENV: 'production',
+    NO_COLOR: 'true',
+  },
 };
 
 const database = new DatabaseStack(app, 'Database', { env });
