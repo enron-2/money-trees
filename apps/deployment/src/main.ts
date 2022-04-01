@@ -15,6 +15,7 @@ new HttpStack(app, 'StagingHttpStack', {
 new ParserStack(app, 'StagingParserStack', {
   env,
   database: stagingDb,
+  stageName: 'staging',
 });
 
 const prodDb = new DatabaseStack(app, 'ProdDatabase', { env });
@@ -26,4 +27,5 @@ new HttpStack(app, 'ProdHttpStack', {
 new ParserStack(app, 'ProdParserStack', {
   env,
   database: prodDb,
+  stageName: 'prod',
 });

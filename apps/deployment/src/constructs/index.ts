@@ -30,14 +30,18 @@ const generateEnvs = (env?: Record<string, string>) => ({
  */
 export class NodeLambdaFunc extends Construct {
   LambdaFunction: lambda.Function;
-  constructor(scope: Construct, id: string, props: NodeLambdaFuncProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    { environment, ...props }: NodeLambdaFuncProps
+  ) {
     super(scope, id);
     this.LambdaFunction = new lambda.Function(this, id, {
       runtime: lambda.Runtime.NODEJS_14_X,
       handler: 'main.handler',
       memorySize: 256,
       timeout: Duration.seconds(5),
-      environment: generateEnvs(props.environment),
+      environment: generateEnvs(environment),
       ...props,
     });
   }
