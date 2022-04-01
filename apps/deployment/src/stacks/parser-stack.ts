@@ -29,6 +29,9 @@ export class ParserStack extends Stack {
     const parserLambda = new NodeLambdaFunc(this, 'ParserHandlerFunc', {
       code: lambda.Code.fromAsset(pathToCode),
       environment: {
+        PROJECT_TABLE: database.Project.tableName,
+        PACKAGE_TABLE: database.Package.tableName,
+        VULN_TABLE: database.Vuln.tableName,
         DOMAIN: 'enron2',
       },
     }).LambdaFunction;

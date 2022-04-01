@@ -4,6 +4,12 @@ import * as lambda from '@aws-cdk/aws-lambda';
 export interface NodeLambdaFuncProps
   extends Omit<lambda.FunctionProps, 'runtime' | 'handler'> {
   code: lambda.Code;
+  environment: {
+    VULN_TABLE: string;
+    PACKAGE_TABLE: string;
+    PROJECT_TABLE: string;
+    [key: string]: string;
+  };
 }
 
 const generateEnvs = (env?: Record<string, string>) => ({

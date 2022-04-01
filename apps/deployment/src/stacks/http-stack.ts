@@ -29,6 +29,11 @@ export class HttpStack extends Stack {
 
     const httpLambda = new NodeLambdaFunc(this, 'HttpHandlerFunc', {
       code: lambda.Code.fromAsset(pathToCode),
+      environment: {
+        PROJECT_TABLE: database.Project.tableName,
+        PACKAGE_TABLE: database.Package.tableName,
+        VULN_TABLE: database.Vuln.tableName,
+      },
     }).LambdaFunction;
 
     database.grantReadAll(httpLambda);
