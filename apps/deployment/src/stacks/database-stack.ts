@@ -16,7 +16,6 @@ export class DatabaseStack extends Stack {
     for (const t of Object.keys(table)) {
       this.Tables[t] = new Table(this, t, {
         partitionKey: { name: 'id', type: AttributeType.STRING },
-        tableName: t,
       });
     }
     this.Tables.Package.addGlobalSecondaryIndex({
@@ -33,6 +32,18 @@ export class DatabaseStack extends Stack {
         type: AttributeType.STRING,
       },
     });
+  }
+
+  get Package() {
+    return this.Tables.Package;
+  }
+
+  get Project() {
+    return this.Tables.Project;
+  }
+
+  get Vuln() {
+    return this.Tables.Vuln;
   }
 
   grantRead(entity: IGrantable, resource: keyof ITables) {

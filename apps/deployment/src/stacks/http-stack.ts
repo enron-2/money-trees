@@ -7,6 +7,7 @@ import { NodeLambdaFunc } from '../constructs';
 
 interface HttpStackProp extends StackProps {
   database: DatabaseStack;
+  stageName: string;
 }
 
 export class HttpStack extends Stack {
@@ -29,6 +30,11 @@ export class HttpStack extends Stack {
 
     const httpLambda = new NodeLambdaFunc(this, 'HttpHandlerFunc', {
       code: lambda.Code.fromAsset(pathToCode),
+      environment: {
+        PROJECT_TABLE: database.Project.tableName,
+        PACKAGE_TABLE: database.Package.tableName,
+        VULN_TABLE: database.Vuln.tableName,
+      },
     }).LambdaFunction;
 
     database.grantReadAll(httpLambda);
@@ -38,6 +44,9 @@ export class HttpStack extends Stack {
     const api = new apiGw.LambdaRestApi(this, 'RESTEndpoint', {
       handler: httpLambda,
       proxy: true,
+      deployOptions: {
+        stageName: props.stageName,
+      },
     });
 
     new CfnOutput(this, 'API URL', {
