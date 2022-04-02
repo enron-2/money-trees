@@ -43,7 +43,7 @@ export class ProjectsController {
     @Query()
     { limit, lastKey, ...query }: ProjectSearchInputDto
   ): Promise<ProjectDto[]> {
-    return this.projectsService.findAll(limit, lastKey, query);
+    return this.projectsService.findAll(limit, lastKey, query, ProjectDto);
   }
 
   @ApiOperation({ summary: 'Project with given ID' })
@@ -55,7 +55,7 @@ export class ProjectsController {
   async findOne(
     @Param('id', new ParseUUIDPipe()) id: string
   ): Promise<ProjectDto> {
-    const res = await this.projectsService.findOne(id);
+    const res = await this.projectsService.findOne(id, ProjectDto);
     if (!res) throw new NotFoundException();
     return res;
   }
@@ -72,7 +72,7 @@ export class ProjectsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Query() { lastKey, limit = 10 }: PaginationDto
   ): Promise<ProjectDetailDto> {
-    const response = await this.projectsService.findOne(id);
+    const response = await this.projectsService.findOne(id, ProjectDetailDto);
     if (!response) throw new NotFoundException();
 
     const pkgIds = response.packages as unknown as string[];

@@ -52,7 +52,7 @@ export class PackagesController {
     @Query()
     { limit, lastKey, ...query }: PackageSearchInputDto
   ): Promise<PackageDto[]> {
-    return this.packagesService.findAll(limit, lastKey, query);
+    return this.packagesService.findAll(limit, lastKey, query, PackageDto);
   }
 
   @ApiOperation({ summary: 'Package with given ID' })
@@ -64,7 +64,7 @@ export class PackagesController {
   async findOne(
     @Param('id', new ParseUUIDPipe()) id: string
   ): Promise<PackageDto> {
-    const res = await this.packagesService.findOne(id);
+    const res = await this.packagesService.findOne(id, PackageDto);
     if (!res) throw new NotFoundException();
     return res;
   }
@@ -81,7 +81,7 @@ export class PackagesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Query() { lastKey, limit = 10 }: PaginationDto
   ): Promise<PackageDetailDto> {
-    const response = await this.packagesService.findOne(id);
+    const response = await this.packagesService.findOne(id, PackageDetailDto);
     if (!response) throw new NotFoundException();
 
     const vulnIds = response.vulns as unknown as string[];
