@@ -18,7 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNumber, IsOptional } from 'class-validator';
-import { PackageDetailDto, PackageDto } from '../dto';
+import { PackageDetailDto, PackageDto, ProjectDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { PackagesService } from './packages.service';
@@ -99,5 +99,20 @@ export class PackagesController {
 
     await response.populate();
     return response;
+  }
+
+  @ApiOperation({
+    summary: 'List of projects using a package',
+  })
+  @ApiOkResponse({
+    type: [ProjectDto],
+  })
+  @UseInterceptors(new DtoConformInterceptor(ProjectDto))
+  @Get(':id/projects')
+  async projectsUsingPackage(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query() { lastKey, limit = 10 }: PaginationDto
+  ) {
+    return this.packagesService.findProjectConsumingPackage(id, limit, lastKey);
   }
 }
