@@ -32,6 +32,8 @@ export class DevHttpModule {}
 async function bootstrap() {
   const app = await NestFactory.create(DevHttpModule);
 
+  app.enableCors();
+
   const config = new DocumentBuilder()
     .setTitle('Money Tr33s')
     .setDescription(

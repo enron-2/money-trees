@@ -16,6 +16,9 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
+  // TODO: allow only 'frontend' origin
+  app.enableCors();
+
   await app.init();
   server = createServer(expr);
 }
