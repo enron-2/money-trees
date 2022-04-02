@@ -47,6 +47,13 @@ export class HttpStack extends Stack {
       deployOptions: {
         stageName: props.stageName,
       },
+      description: `REST endpoint for ${props.stageName}`,
+      defaultCorsPreflightOptions: {
+        // TODO: allow only 'frontend' origin
+        allowOrigins: apiGw.Cors.ALL_ORIGINS,
+        allowMethods: apiGw.Cors.ALL_METHODS,
+        allowHeaders: apiGw.Cors.DEFAULT_HEADERS,
+      },
     });
 
     new CfnOutput(this, 'API URL', {
