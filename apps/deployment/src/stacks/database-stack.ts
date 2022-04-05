@@ -1,6 +1,6 @@
 import { Construct, Stack, StackProps } from '@aws-cdk/core';
 import { IGrantable } from '@aws-cdk/aws-iam';
-import { AttributeType, Table } from '@aws-cdk/aws-dynamodb';
+import { AttributeType, BillingMode, Table } from '@aws-cdk/aws-dynamodb';
 import * as table from '@schemas/tablenames';
 
 export interface ITables {
@@ -16,6 +16,7 @@ export class DatabaseStack extends Stack {
     for (const t of Object.keys(table)) {
       this.Tables[t] = new Table(this, t, {
         partitionKey: { name: 'id', type: AttributeType.STRING },
+        billingMode: BillingMode.PAY_PER_REQUEST,
       });
     }
     this.Tables.Package.addGlobalSecondaryIndex({
