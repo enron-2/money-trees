@@ -10,15 +10,24 @@ import {
 import {
   ApiOkResponse,
   ApiOperation,
+  ApiProperty,
   ApiTags,
   IntersectionType,
   OmitType,
   PartialType,
 } from '@nestjs/swagger';
-import { ProjectDetailDto, ProjectDto } from '../dto';
+import { Expose, Type } from 'class-transformer';
+import { PackageWithMaxVuln, ProjectDetailDto, ProjectDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { ProjectsService } from './projects.service';
+
+class ProjectPackageWithMaxVulnDto extends ProjectDto {
+  @Expose()
+  @Type(() => PackageWithMaxVuln)
+  @ApiProperty({ type: [PackageWithMaxVuln] })
+  packages: Array<PackageWithMaxVuln>;
+}
 
 class ProjectSearchInputDto extends PartialType(
   IntersectionType(OmitType(ProjectDto, ['id']), PaginationDto)
@@ -90,5 +99,50 @@ export class ProjectsController {
 
     await response.populate();
     return response;
+  }
+
+  @ApiOperation({
+    summary:
+      'Project with given ID including its dependencies (packages used) + max vulnerability',
+  })
+  @ApiOkResponse({
+    type: ProjectPackageWithMaxVulnDto,
+  })
+  @UseInterceptors(new DtoConformInterceptor(ProjectPackageWithMaxVulnDto))
+  @Get(':id/packages/withMaximumVuln')
+  async packagesInProjectWithMaxVuln(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query() { lastKey, limit = 10 }: PaginationDto
+  ): Promise<ProjectDetailDto> {
+    const response = await this.projectsService.findOne(id, ProjectDetailDto);
+    if (!response) throw new NotFoundException();
+
+    await response.populate();
+
+    let sortedPackages: PackageWithMaxVuln[] = response.packages
+      .map((p) => ({
+        ...p,
+        maxVuln: p.vulns?.reduce((prev, curr) =>
+          prev.severity > curr.severity ? prev : curr
+        ),
+      }))
+      .sort((a, b) => b?.maxVuln?.severity ?? 0 - a?.maxVuln?.severity ?? 0);
+
+    let lastKeyIdx: number;
+    if (lastKey) {
+      lastKeyIdx = sortedPackages.findIndex((p) => p.id === lastKey);
+      if (lastKeyIdx < 0) throw new NotFoundException('lastKey not found');
+      sortedPackages =
+        sortedPackages?.length - 1 > lastKeyIdx
+          ? sortedPackages.slice(lastKeyIdx + 1, lastKeyIdx + limit)
+          : []; // no more items after lastKey
+    } else {
+      sortedPackages = sortedPackages?.slice(0, limit);
+    }
+
+    return {
+      ...response,
+      packages: sortedPackages,
+    };
   }
 }
