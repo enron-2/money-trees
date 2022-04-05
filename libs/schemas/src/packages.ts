@@ -35,6 +35,7 @@ export const createPackageSchema = (vulnModel: Model): Schema =>
       type: Array,
       schema: [vulnModel as any],
     },
+    maxVuln: vulnModel as any,
     createdAt: { type: Date, required: true },
   });
 
@@ -48,5 +49,6 @@ export interface Package extends PackageKey {
   url: string;
   checksum: string;
   vulns?: Array<Vulnerability>;
+  maxVuln?: Vulnerability;
   createdAt: Date;
 }

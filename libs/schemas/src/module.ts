@@ -20,8 +20,9 @@ const customDynamooseModule = CustomDynamooseModule.forFeatureAsync([
   {
     name: process.env.PROJECT_TABLE ?? Project,
     provide: Project,
-    inject: [`${Package}Model`],
-    useFactory: (_, model) => createProjectSchema(model),
+    inject: [`${Package}Model`, `${Vuln}Model`],
+    useFactory: (_, pkgModel, vulnModel) =>
+      createProjectSchema(pkgModel, vulnModel),
   },
 ]);
 

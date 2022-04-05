@@ -4,10 +4,14 @@ import { isNonEmptyString } from '@core/validator';
 import { isURL } from 'class-validator';
 import { Model } from 'dynamoose/dist/Model';
 import { Package } from './packages';
+import { Vulnerability } from './vulnerabilities';
 
 const uuid = v4;
 
-export function createProjectSchema(packageModel: Model): Schema {
+export function createProjectSchema(
+  packageModel: Model,
+  vulnModel: Model
+): Schema {
   return new Schema({
     id: {
       type: String,
@@ -27,6 +31,7 @@ export function createProjectSchema(packageModel: Model): Schema {
       type: Array,
       schema: [packageModel as any],
     },
+    maxVuln: vulnModel as any,
   });
 }
 
@@ -38,4 +43,5 @@ export interface Project extends ProjectKey {
   name: string;
   url: string;
   packages?: Array<Package>;
+  maxVuln?: Vulnerability;
 }
