@@ -96,6 +96,13 @@ export class PackageDto extends OmitType(PackageDetailDto, ['vulns']) {
   createdAt: Date;
 }
 
+export class PackageWithMaxVuln extends PackageDto {
+  @Expose()
+  @Type(() => VulnDto)
+  @ApiPropertyOptional({ type: VulnDto })
+  maxVuln?: VulnDto;
+}
+
 export class ProjectDetailDto implements Omit<Project, 'packages'> {
   @Expose()
   @ApiProperty()
