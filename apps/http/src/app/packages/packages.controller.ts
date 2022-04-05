@@ -18,7 +18,12 @@ import {
 } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNumber, IsOptional } from 'class-validator';
-import { PackageDetailDto, PackageDto, ProjectDto } from '../dto';
+import {
+  PackageDetailDto,
+  PackageDto,
+  PackageWithMaxVuln,
+  ProjectDto,
+} from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { PackagesService } from './packages.service';
@@ -81,6 +86,29 @@ export class PackagesController {
         p.vulns?.[0]
       ),
     }));
+  }
+
+  @ApiOperation({
+    summary: 'Package with given ID and its max vuln if it exists',
+  })
+  @ApiOkResponse({
+    type: PackageWithMaxVuln,
+  })
+  @UseInterceptors(new DtoConformInterceptor(PackageWithMaxVuln))
+  @Get(':id/withMaximumVuln')
+  async findOneWithMax(
+    @Param('id', new ParseUUIDPipe()) id: string
+  ): Promise<PackageWithMaxVuln> {
+    const res = await this.packagesService.findOne(id, PackageDetailDto);
+    if (!res) throw new NotFoundException();
+    await res.populate();
+    return {
+      ...res,
+      maxVuln: res.vulns?.reduce(
+        (prev, curr) => (prev.severity > curr.severity ? prev : curr),
+        res.vulns?.[0]
+      ),
+    };
   }
 
   @ApiOperation({ summary: 'Package with given ID' })
