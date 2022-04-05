@@ -109,11 +109,11 @@ export class ProjectsController {
     type: ProjectPackageWithMaxVulnDto,
   })
   @UseInterceptors(new DtoConformInterceptor(ProjectPackageWithMaxVulnDto))
-  @Get(':id/packages/withMaximumVuln')
+  @Get(':id/packages/maxVuln')
   async packagesInProjectWithMaxVuln(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Query() { lastKey, limit = 10 }: PaginationDto
-  ): Promise<ProjectDetailDto> {
+  ): Promise<ProjectPackageWithMaxVulnDto> {
     const response = await this.projectsService.findOne(id, ProjectDetailDto);
     if (!response) throw new NotFoundException();
 

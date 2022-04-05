@@ -67,7 +67,7 @@ export class PackagesController {
     type: [PackageWithMaxVuln],
   })
   @UseInterceptors(new DtoConformInterceptor(PackageWithMaxVuln))
-  @Get('withMaximumVuln')
+  @Get('maxVuln')
   async withMaxVulns(
     @Query()
     { limit, lastKey, ...query }: PackageSearchInputDto
@@ -95,7 +95,7 @@ export class PackagesController {
     type: PackageWithMaxVuln,
   })
   @UseInterceptors(new DtoConformInterceptor(PackageWithMaxVuln))
-  @Get(':id/withMaximumVuln')
+  @Get(':id/maxVuln')
   async findOneWithMax(
     @Param('id', new ParseUUIDPipe()) id: string
   ): Promise<PackageWithMaxVuln> {
