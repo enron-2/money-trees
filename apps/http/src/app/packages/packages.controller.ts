@@ -55,6 +55,38 @@ export class PackagesController {
     return this.packagesService.findAll(limit, lastKey, query, PackageDto);
   }
 
+  @ApiOperation({
+    summary: 'All packages and its highest vulnerability if available',
+  })
+  @ApiOkResponse({
+    type: [PackageDetailDto],
+  })
+  @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
+  @Get('withMaximumVuln')
+  async withMaxVulns(
+    @Query()
+    { limit, lastKey, ...query }: PackageSearchInputDto
+  ) {
+    const pkgs = await this.packagesService.findAll(
+      limit,
+      lastKey,
+      query,
+      PackageDetailDto
+    );
+    await Promise.all(pkgs.map((p) => p.populate()));
+    return pkgs.map((p) => ({
+      ...p,
+      vulns:
+        Array.isArray(p.vulns) && p.vulns.length > 0
+          ? [
+              p.vulns.reduce((prev, curr) =>
+                prev.severity > curr.severity ? prev : curr
+              ),
+            ]
+          : [],
+    }));
+  }
+
   @ApiOperation({ summary: 'Package with given ID' })
   @ApiOkResponse({
     type: PackageDto,
