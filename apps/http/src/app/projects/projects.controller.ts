@@ -117,32 +117,35 @@ export class ProjectsController {
     const response = await this.projectsService.findOne(id, ProjectDetailDto);
     if (!response) throw new NotFoundException();
 
-    await response.populate();
-
-    let sortedPackages: PackageWithMaxVuln[] = response.packages
-      .map((p) => ({
-        ...p,
-        maxVuln: p.vulns?.reduce((prev, curr) =>
-          prev.severity > curr.severity ? prev : curr
-        ),
-      }))
-      .sort((a, b) => b?.maxVuln?.severity ?? 0 - a?.maxVuln?.severity ?? 0);
-
     let lastKeyIdx: number;
     if (lastKey) {
-      lastKeyIdx = sortedPackages.findIndex((p) => p.id === lastKey);
+      lastKeyIdx = response.packages?.findIndex(
+        (p) => (p as unknown as string) === lastKey
+      );
       if (lastKeyIdx < 0) throw new NotFoundException('lastKey not found');
-      sortedPackages =
-        sortedPackages?.length - 1 > lastKeyIdx
-          ? sortedPackages.slice(lastKeyIdx + 1, lastKeyIdx + limit)
+      response.packages =
+        response.packages.length - 1 > lastKeyIdx
+          ? response.packages?.slice(lastKeyIdx + 1, lastKeyIdx + limit)
           : []; // no more items after lastKey
     } else {
-      sortedPackages = sortedPackages?.slice(0, limit);
+      response.packages = response.packages?.slice(0, limit);
     }
+
+    await response.populate();
+
+    const pkgWithMaxVuln: PackageWithMaxVuln[] = response.packages?.map(
+      (p) => ({
+        ...p,
+        maxVuln: p.vulns?.reduce(
+          (prev, curr) => (prev.severity > curr.severity ? prev : curr),
+          p.vulns?.[0]
+        ),
+      })
+    );
 
     return {
       ...response,
-      packages: sortedPackages,
+      packages: pkgWithMaxVuln,
     };
   }
 }
