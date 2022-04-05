@@ -11,13 +11,19 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiProperty,
+  ApiPropertyOptional,
   ApiTags,
   IntersectionType,
   OmitType,
   PartialType,
 } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
-import { PackageWithMaxVuln, ProjectDetailDto, ProjectDto } from '../dto';
+import {
+  PackageWithMaxVuln,
+  ProjectDetailDto,
+  ProjectDto,
+  VulnDto,
+} from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PaginationDto } from '../query-service.abstract';
 import { ProjectsService } from './projects.service';
@@ -27,6 +33,13 @@ class ProjectPackageWithMaxVulnDto extends ProjectDto {
   @Type(() => PackageWithMaxVuln)
   @ApiProperty({ type: [PackageWithMaxVuln] })
   packages: Array<PackageWithMaxVuln>;
+}
+
+class ProjectMaxVuln extends ProjectDto {
+  @Expose()
+  @Type(() => VulnDto)
+  @ApiPropertyOptional({ type: VulnDto })
+  maxVuln?: VulnDto;
 }
 
 class ProjectSearchInputDto extends PartialType(
@@ -53,6 +66,43 @@ export class ProjectsController {
     { limit, lastKey, ...query }: ProjectSearchInputDto
   ): Promise<ProjectDto[]> {
     return this.projectsService.findAll(limit, lastKey, query, ProjectDto);
+  }
+
+  @ApiOperation({
+    summary: 'All projects with max vuln',
+    description:
+      'Warning, request is really slow due to the need to check EVERY package available',
+  })
+  @ApiOkResponse({
+    type: [ProjectDto],
+  })
+  @UseInterceptors(new DtoConformInterceptor(ProjectMaxVuln))
+  @Get('maxVuln')
+  async allWithMaxVuln(
+    @Query()
+    { limit, lastKey, ...query }: ProjectSearchInputDto
+  ): Promise<ProjectMaxVuln[]> {
+    const prjs = await this.projectsService.findAll(
+      limit,
+      lastKey,
+      query,
+      ProjectDetailDto
+    );
+    await Promise.all(prjs.map((p) => p.populate()));
+    return prjs.map((prj) => ({
+      ...prj,
+      maxVuln: prj.packages
+        .map((pkg) =>
+          pkg.vulns?.reduce((prev, curr) =>
+            // Max vuln on each package
+            prev?.severity ?? 0 > curr?.severity ?? 0 ? prev : curr
+          )
+        )
+        // Max vuln across all packages' max vuln
+        ?.reduce((prev, curr) =>
+          prev?.severity ?? 0 > curr?.severity ?? 0 ? prev : curr
+        ),
+    }));
   }
 
   @ApiOperation({ summary: 'Project with given ID' })
