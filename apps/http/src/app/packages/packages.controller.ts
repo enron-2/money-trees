@@ -59,9 +59,9 @@ export class PackagesController {
     summary: 'All packages and its highest vulnerability if available',
   })
   @ApiOkResponse({
-    type: [PackageDetailDto],
+    type: [PackageWithMaxVuln],
   })
-  @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
+  @UseInterceptors(new DtoConformInterceptor(PackageWithMaxVuln))
   @Get('withMaximumVuln')
   async withMaxVulns(
     @Query()
@@ -76,14 +76,10 @@ export class PackagesController {
     await Promise.all(pkgs.map((p) => p.populate()));
     return pkgs.map((p) => ({
       ...p,
-      vulns:
-        Array.isArray(p.vulns) && p.vulns.length > 0
-          ? [
-              p.vulns.reduce((prev, curr) =>
-                prev.severity > curr.severity ? prev : curr
-              ),
-            ]
-          : [],
+      maxVuln: p.vulns?.reduce(
+        (prev, curr) => (prev.severity > curr.severity ? prev : curr),
+        p.vulns?.[0]
+      ),
     }));
   }
 
