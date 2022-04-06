@@ -7,7 +7,7 @@ import { PackagesModule } from './packages/packages.module';
 import { ProjectsModule } from './projects/projects.module';
 import { VulnsModule } from './vulns/vulns.module';
 
-const logger = new Logger('DynamoDB');
+const logger = process.env.DYNAMO_LOGS ? new Logger('DynamoDB') : undefined;
 
 @Global()
 @Module({ imports: [SchemaModule], exports: [SchemaModule] })
