@@ -1,4 +1,3 @@
-const Vuln = 'Vuln';
-const Package = 'Package';
+const PackageVuln = 'PackageVuln';
 const Project = 'Project';
-export { Vuln, Package, Project };
+export { PackageVuln, Project };
