@@ -27,7 +27,10 @@ export class VulnsService extends QueryService<
    * Get list of packages affected by the vuln
    */
   async packagesAffected(id: string, limit = 10, lastKey?: string) {
-    const vuln = await this.vulns.get({ id });
+    const vuln = await this.vulns.get(
+      { id },
+      { attributes: ['id'], return: 'document' }
+    );
     if (!vuln) throw new NotFoundException();
     const scanner = this.pkgSvc.packages
       .scan()
