@@ -86,23 +86,10 @@ export class ProjectsController {
       limit,
       lastKey,
       query,
-      ProjectDetailDto
+      ProjectMaxVuln
     );
     await Promise.all(prjs.map((p) => p.populate()));
-    return prjs.map((prj) => ({
-      ...prj,
-      maxVuln: prj.packages
-        .map((pkg) =>
-          pkg.vulns?.reduce((prev, curr) =>
-            // Max vuln on each package
-            prev?.severity ?? 0 > curr?.severity ?? 0 ? prev : curr
-          )
-        )
-        // Max vuln across all packages' max vuln
-        ?.reduce((prev, curr) =>
-          prev?.severity ?? 0 > curr?.severity ?? 0 ? prev : curr
-        ),
-    }));
+    return prjs;
   }
 
   @ApiOperation({ summary: 'Project with given ID' })
@@ -181,21 +168,6 @@ export class ProjectsController {
       response.packages = response.packages?.slice(0, limit);
     }
 
-    await response.populate();
-
-    const pkgWithMaxVuln: PackageWithMaxVuln[] = response.packages?.map(
-      (p) => ({
-        ...p,
-        maxVuln: p.vulns?.reduce(
-          (prev, curr) => (prev.severity > curr.severity ? prev : curr),
-          p.vulns?.[0]
-        ),
-      })
-    );
-
-    return {
-      ...response,
-      packages: pkgWithMaxVuln,
-    };
+    return response.populate() as any;
   }
 }

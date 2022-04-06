@@ -76,16 +76,10 @@ export class PackagesController {
       limit,
       lastKey,
       query,
-      PackageDetailDto
+      PackageWithMaxVuln
     );
     await Promise.all(pkgs.map((p) => p.populate()));
-    return pkgs.map((p) => ({
-      ...p,
-      maxVuln: p.vulns?.reduce(
-        (prev, curr) => (prev.severity > curr.severity ? prev : curr),
-        p.vulns?.[0]
-      ),
-    }));
+    return pkgs;
   }
 
   @ApiOperation({
@@ -99,16 +93,9 @@ export class PackagesController {
   async findOneWithMax(
     @Param('id', new ParseUUIDPipe()) id: string
   ): Promise<PackageWithMaxVuln> {
-    const res = await this.packagesService.findOne(id, PackageDetailDto);
+    const res = await this.packagesService.findOne(id, PackageWithMaxVuln);
     if (!res) throw new NotFoundException();
-    await res.populate();
-    return {
-      ...res,
-      maxVuln: res.vulns?.reduce(
-        (prev, curr) => (prev.severity > curr.severity ? prev : curr),
-        res.vulns?.[0]
-      ),
-    };
+    return res.populate();
   }
 
   @ApiOperation({ summary: 'Package with given ID' })

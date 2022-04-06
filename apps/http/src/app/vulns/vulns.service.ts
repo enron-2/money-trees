@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ProjectKey, Project } from '@schemas/projects';
 import { Vulnerability, VulnerabilityKey } from '@schemas/vulnerabilities';
 import { instanceToPlain, plainToInstance } from 'class-transformer';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { v4 } from 'uuid';
+import { ProjectDto } from '../dto';
 import { PackagesService } from '../packages/packages.service';
 import { QueryService } from '../query-service.abstract';
 import { CreateVulnInput, UpdateVulnInput } from './vulns.dto';
@@ -18,7 +20,9 @@ export class VulnsService extends QueryService<
   constructor(
     @InjectModel('Vuln')
     readonly vulns: Model<Vulnerability, VulnerabilityKey, 'id'>,
-    private readonly pkgSvc: PackagesService
+    private readonly pkgSvc: PackagesService,
+    @InjectModel('Project')
+    private readonly projects: Model<Project, ProjectKey, 'id'>
   ) {
     super(vulns);
   }
@@ -91,11 +95,71 @@ export class VulnsService extends QueryService<
       packageIds.map((id) => this.linkToPackage(vulnId, id))
     ).then((res) => res.filter((p) => !!p));
 
-    const newVuln = this.vulns.transaction.create({ id: vulnId, ...data });
-    const updatedPkgs = pkgs.map(({ id, ...data }) =>
-      this.pkgSvc.packages.transaction.update({ id }, data)
+    const scanner = this.projects
+      .scan()
+      .attributes([...this.normalizeAttributes(ProjectDto as any), 'maxVuln']);
+    packageIds?.forEach((pkgId) =>
+      scanner.or().where('packages').contains(pkgId)
     );
-    await this.transaction([newVuln, ...updatedPkgs]);
+    // Find projects that uses the package
+    const scanResults = await scanner.exec();
+
+    // Resolve 'maxVuln' property from id
+    const projectsAffected = await Promise.all(
+      scanResults.map(async (prj) => ({
+        ...prj,
+        maxVuln: prj.maxVuln
+          ? await this.vulns
+              .query()
+              .where('id')
+              .eq(prj.maxVuln)
+              .exec()
+              .then((res) => res[0])
+          : undefined,
+      }))
+    );
+
+    const newVuln = this.vulns.transaction.create({ id: vulnId, ...data });
+
+    // Populate maxVuln for all packages
+    const populatedPkgs = await Promise.all(
+      pkgs.map(async (pkg) => ({
+        ...pkg,
+        maxVuln: pkg.maxVuln
+          ? await this.vulns
+              .query()
+              .where('id')
+              .eq(pkg.maxVuln)
+              .exec()
+              .then((res) => res[0])
+          : undefined,
+      }))
+    );
+
+    // Prepare update package transaction
+    const updatedPkgs = populatedPkgs
+      .filter((pkg) => !pkg.maxVuln || pkg.maxVuln.severity < data.severity)
+      .map(({ id, ...pkgUpdateData }) =>
+        this.pkgSvc.packages.transaction.update(
+          { id },
+          {
+            ...pkgUpdateData,
+            maxVuln: { ...data, id: vulnId },
+          }
+        )
+      );
+
+    // Prepare update project transaction
+    const updatedProjects = projectsAffected
+      .filter((prj) => !prj.maxVuln || prj.maxVuln.severity < data.severity)
+      .map(({ id, ...prjUpdateData }) =>
+        this.projects.transaction.update(
+          { id },
+          { ...prjUpdateData, maxVuln: { ...data, id: vulnId } }
+        )
+      );
+
+    await this.transaction([newVuln, ...updatedPkgs, ...updatedProjects]);
 
     return this.vulns.get({ id: vulnId });
   }
@@ -117,6 +181,7 @@ export class VulnsService extends QueryService<
         excludeExtraneousValues: true,
       }
     );
+    // TODO: update projects and packages if severity changes
     return this.vulns.update({ id }, newData);
   }
 
@@ -136,9 +201,33 @@ export class VulnsService extends QueryService<
       // Vuln already here
       return pkg.populate();
     }
+
+    await pkg.populate();
     const { id, ...data } = pkg;
-    const updated = await this.pkgSvc.packages.update({ id }, data);
-    return updated.populate();
+
+    const affectedProjects = await this.projects
+      .scan()
+      .where('packages')
+      .contains(pkg.id)
+      .exec();
+
+    const updatedPackages = this.pkgSvc.packages.transaction.update(
+      { id },
+      {
+        ...data,
+        maxVuln:
+          data?.maxVuln?.severity ?? -1 > vuln.severity ? data.maxVuln : vuln,
+      }
+    );
+    const updatedProjects = affectedProjects
+      .filter((prj) => prj?.maxVuln?.severity ?? -1 < vuln.severity)
+      .map(({ id, ...data }) =>
+        this.projects.transaction.update({ id }, { ...data, maxVuln: vuln })
+      );
+
+    await this.transaction([updatedPackages, ...updatedProjects]);
+
+    return this.pkgSvc.findOne(pkg.id);
   }
 
   /**
@@ -154,9 +243,39 @@ export class VulnsService extends QueryService<
     }
     // Get only vulns with id != vulnId
     pkg.vulns = pkg.vulns.filter((v: any) => v !== vuln.id);
+    await pkg.populate();
+
+    const projects = await this.projects.scan().exec();
+    await Promise.all(projects.map((prj) => prj.populate()));
+    const projectsAffected = projects
+      .filter((prj) => prj.maxVuln && prj.maxVuln.id === vuln.id)
+      .map(({ id, ...prjUpdateData }) =>
+        this.projects.transaction.update(
+          { id },
+          {
+            ...prjUpdateData,
+            maxVuln: prjUpdateData.packages?.reduce((prev, curr) =>
+              prev.maxVuln?.severity > curr.maxVuln?.severity ? prev : curr
+            ).maxVuln,
+          }
+        )
+      );
+
     const { id, ...data } = pkg;
-    const updated = await this.pkgSvc.packages.update({ id }, data);
-    return updated.populate();
+    const updated = await this.pkgSvc.packages.transaction.update(
+      { id },
+      {
+        ...data,
+        // get new maxVuln
+        maxVuln: data.vulns?.reduce((prev, curr) =>
+          prev.severity > curr.severity ? prev : curr
+        ),
+      }
+    );
+
+    await this.transaction([updated, ...projectsAffected]);
+
+    return this.pkgSvc.findOne(pkg.id).then((pkg) => pkg.populate());
   }
 
   /**
@@ -182,11 +301,62 @@ export class VulnsService extends QueryService<
     if (!toDelete) throw new NotFoundException();
     const pkgs = await this.unlinkFromPackage(id);
 
+    const scanner = this.projects
+      .scan()
+      .attributes(['id', 'name', 'url', 'packages', 'maxVuln'] as Array<
+        keyof Project
+      >);
+    for (const pkg of pkgs) {
+      scanner.or().where('packages').contains(pkg.id);
+    }
+
+    const scanResults = await scanner.exec();
+    const affectedProjects = await Promise.all(
+      scanResults.map((s) => s.populate())
+    );
+
+    const updatedPrjs = affectedProjects
+      .filter((prj) => prj.maxVuln?.id === toDelete.id)
+      .map(({ id, ...updatedPrjData }) => {
+        const newMaxVuln = updatedPrjData.packages
+          ?.map((p) =>
+            p?.vulns
+              ?.filter((v) => v.id !== toDelete.id)
+              ?.reduce(
+                (prev, curr) =>
+                  prev?.severity ?? -1 > curr?.severity ?? -1 ? prev : curr,
+                undefined
+              )
+          )
+          ?.reduce((prev, curr) =>
+            prev?.severity ?? -1 > curr?.severity ?? -1 ? prev : curr
+          );
+
+        return this.projects.transaction.update(
+          { id },
+          {
+            ...updatedPrjData,
+            packages: updatedPrjData.packages.map((pkg) => pkg.id) as any,
+            maxVuln: newMaxVuln,
+          }
+        );
+      });
+
     const deletedVuln = this.vulns.transaction.delete({ id });
     const updatedPkgs = pkgs.map(({ id, ...data }) =>
-      this.pkgSvc.packages.transaction.update({ id }, data)
+      this.pkgSvc.packages.transaction.update(
+        { id },
+        {
+          ...data,
+          maxVuln: data.vulns?.reduce(
+            (prev, curr) =>
+              prev?.severity ?? -1 > curr?.severity ?? -1 ? prev : curr,
+            data.vulns?.[0]
+          ),
+        }
+      )
     );
-    await this.transaction([...updatedPkgs, deletedVuln]);
+    await this.transaction([...updatedPkgs, ...updatedPrjs, deletedVuln]);
 
     return toDelete;
   }
