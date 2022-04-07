@@ -3,35 +3,33 @@ import {
   Get,
   NotFoundException,
   Param,
-  ParseUUIDPipe,
   Query,
   UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiOkResponse,
   ApiOperation,
-  ApiPropertyOptional,
+  ApiQuery,
   ApiTags,
   IntersectionType,
   OmitType,
   PartialType,
 } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsNumber, IsOptional } from 'class-validator';
-import { PackageDetailDto, PackageDto, ProjectDto } from '../dto';
+import { PackageEntity } from '@schemas/entities';
+import { EnumValidationPipe } from '@core/pipes';
+import { SortOrder } from 'dynamoose/dist/General';
+import {
+  PackageDetailDto,
+  PackageDto,
+  PaginationDto,
+  ProjectDto,
+} from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
-import { PaginationDto } from '../query-service.abstract';
 import { PackagesService } from './packages.service';
 
 class PackageSearchInputDto extends PartialType(
-  IntersectionType(OmitType(PackageDto, ['id', 'createdAt']), PaginationDto)
-) {
-  @ApiPropertyOptional({ type: Number })
-  @IsOptional()
-  @Transform((param) => +param.value)
-  @IsNumber()
-  createdAt?: number;
-}
+  IntersectionType(OmitType(PackageEntity, ['type', 'id']), PaginationDto)
+) {}
 
 @ApiTags('Packages')
 @Controller('packages')
@@ -52,7 +50,7 @@ export class PackagesController {
     @Query()
     { limit, lastKey, ...query }: PackageSearchInputDto
   ): Promise<PackageDto[]> {
-    return this.packagesService.findAll(limit, lastKey, query, PackageDto);
+    return this.packagesService.findAll(limit, lastKey, query);
   }
 
   @ApiOperation({ summary: 'Package with given ID' })
@@ -61,12 +59,10 @@ export class PackagesController {
   })
   @UseInterceptors(new DtoConformInterceptor(PackageDto))
   @Get(':id')
-  async findOne(
-    @Param('id', new ParseUUIDPipe()) id: string
-  ): Promise<PackageDto> {
-    const res = await this.packagesService.findOne(id, PackageDto);
-    if (!res) throw new NotFoundException();
-    return res;
+  async findOne(@Param('id') id: string): Promise<PackageDto> {
+    const pkg = await this.packagesService.findOne(id);
+    if (!pkg) throw new NotFoundException();
+    return pkg;
   }
 
   @ApiOperation({
@@ -75,30 +71,21 @@ export class PackagesController {
   @ApiOkResponse({
     type: PackageDetailDto,
   })
+  @ApiQuery({
+    name: 'sort',
+    enum: SortOrder,
+    description: 'Sorts vulnerabilities returned',
+    required: false,
+  })
   @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
   @Get(':id/vulns')
   async vulnsInPackage(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Query() { lastKey, limit = 10 }: PaginationDto
+    @Param('id') id: string,
+    @Query() { lastKey, limit }: PaginationDto,
+    @Query('sort', new EnumValidationPipe(SortOrder, { optional: true }))
+    sort?: SortOrder
   ): Promise<PackageDetailDto> {
-    const response = await this.packagesService.findOne(id, PackageDetailDto);
-    if (!response) throw new NotFoundException();
-
-    const vulnIds = response.vulns as unknown as string[];
-    let lastKeyIdx: number;
-    if (lastKey) {
-      lastKeyIdx = vulnIds.indexOf(lastKey);
-      if (lastKeyIdx < 0) throw new NotFoundException('lastKey not found');
-      response.vulns =
-        response.vulns?.length - 1 > lastKeyIdx
-          ? response.vulns.slice(lastKeyIdx + 1, lastKeyIdx + limit)
-          : []; // no more items after lastKey
-    } else {
-      response.vulns = response.vulns?.slice(0, limit);
-    }
-
-    await response.populate();
-    return response;
+    return this.packagesService.findOneWithVulns(id, lastKey, sort, limit);
   }
 
   @ApiOperation({
@@ -107,12 +94,25 @@ export class PackagesController {
   @ApiOkResponse({
     type: [ProjectDto],
   })
+  @ApiQuery({
+    name: 'sort',
+    enum: SortOrder,
+    description: 'Package name alphanumeric sorting',
+    required: false,
+  })
   @UseInterceptors(new DtoConformInterceptor(ProjectDto))
   @Get(':id/projects')
   async projectsUsingPackage(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Query() { lastKey, limit = 10 }: PaginationDto
+    @Param('id') id: string,
+    @Query() { lastKey, limit }: PaginationDto,
+    @Query('sort', new EnumValidationPipe(SortOrder, { optional: true }))
+    sort?: SortOrder
   ) {
-    return this.packagesService.findProjectConsumingPackage(id, limit, lastKey);
+    return this.packagesService.findProjectConsumingPackage(
+      id,
+      lastKey,
+      sort,
+      limit
+    );
   }
 }
