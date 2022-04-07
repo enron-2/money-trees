@@ -251,6 +251,26 @@ describe('Parser module', () => {
     expect(pkgsInPrj.length).toBe(0);
   });
 
+  it('Should not save dependency not matching domain', async () => {
+    svc.domain = 'test-domain';
+    const conf: GenLockFileProps = {
+      name: 'what-is-this',
+      depName: 'rxjs',
+      version: '4.2.0',
+      checksum: generateChecksum('sha512', 'do not save me'),
+    };
+    const lockFile = await svc.createLockFile(generateLockfile(conf));
+    await svc.saveFileContents(lockFile, {
+      name: 'rxjs',
+      owner: 'rxjs',
+    });
+    const prj = await svc.getProject('PRJ#rxjs/rxjs');
+    expect(prj).toBeDefined();
+    const pkg = await svc.getPackage(conf.depName, conf.version);
+    expect(pkg).toBeUndefined();
+    svc.domain = undefined;
+  });
+
   it('Should parse and save open-source package-lock file(s)', async () => {
     const source = {
       repo: 'lodash/lodash',
