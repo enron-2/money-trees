@@ -1,9 +1,8 @@
 import { Schema } from 'dynamoose';
-import { Document } from 'dynamoose/dist/Document';
 import { IsBase64Hash, IsNonEmptyString } from '@core/validator';
 import { IsInt, IsOptional, IsUrl, Matches, Max, Min } from 'class-validator';
 
-export class PkgVulnDocumentKey extends Document {
+export class PkgVulnDocumentKey {
   @IsNonEmptyString()
   @Matches(/^PKG#/)
   id: string;

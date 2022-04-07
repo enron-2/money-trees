@@ -1,9 +1,8 @@
 import { IsNonEmptyString } from '@core/validator';
 import { IsOptional, IsUrl, Matches } from 'class-validator';
 import { Schema } from 'dynamoose';
-import { Document } from 'dynamoose/dist/Document';
 
-export class PrjDocumentKey extends Document {
+export class PrjDocumentKey {
   @IsNonEmptyString()
   @Matches(/^PRJ#/)
   id: string;
