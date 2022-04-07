@@ -1,34 +1,43 @@
 import { Injectable } from '@nestjs/common';
-import { Package, PackageKey } from '@schemas/packages';
-import { Project, ProjectKey } from '@schemas/projects';
 // eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
 import { ParserService } from '@money-trees/parser/parser.service';
 import { InjectModel, Model } from 'nestjs-dynamoose';
+import {
+  PkgVulnDocument,
+  PkgVulnDocumentKey,
+  PrjDocument,
+  PrjDocumentKey,
+} from '@schemas/tables';
+import * as tablenames from '@schemas/tablenames';
 
 type RepoInfo = {
   owner: string;
   repository: string;
 };
 
+type PkgVulnModel = Model<PkgVulnDocument, PkgVulnDocumentKey, 'id' | 'type'>;
+type PrjModel = Model<PrjDocument, PrjDocumentKey, 'id' | 'type'>;
+
 @Injectable()
 export class SeederService {
   parserSvc: ParserService;
   constructor(
-    @InjectModel('Package')
-    readonly pkg: Model<Package, PackageKey, 'id'>,
-    @InjectModel('Project')
-    readonly prj: Model<Project, ProjectKey, 'id'>
+    @InjectModel(tablenames.PackageVuln)
+    readonly pkgVln: PkgVulnModel,
+    @InjectModel(tablenames.Project)
+    readonly prj: PrjModel
   ) {
-    this.parserSvc = new ParserService(pkg, prj);
+    this.parserSvc = new ParserService(pkgVln, prj);
+    this.parserSvc.domain = process.env.DOMAIN;
   }
 
   async loadContent(content: string, repoInfo: RepoInfo) {
-    return this.parserSvc.parseFileContents(
-      content.replace(/npmjs\.org/g, `${process.env.DOMAIN}.org`),
-      {
-        owner: repoInfo.owner,
-        name: repoInfo.repository,
-      }
+    const lockFile = await this.parserSvc.createLockFile(
+      content.replace(/npmjs\.org/g, `${process.env.DOMAIN}.org`)
     );
+    return this.parserSvc.saveFileContents(lockFile, {
+      owner: repoInfo.owner,
+      name: repoInfo.repository,
+    });
   }
 }
