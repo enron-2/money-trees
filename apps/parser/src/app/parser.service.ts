@@ -3,19 +3,30 @@ import { plainToClass } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 import { InjectModel, Model, Document } from 'nestjs-dynamoose';
 import { Injectable, Logger } from '@nestjs/common';
-import { Package, PackageKey } from '@schemas/packages';
-import { Project, ProjectKey } from '@schemas/projects';
-import { PackageLock } from './package-lock.dto';
+import { SortOrder } from 'dynamoose/dist/General';
+import { chunk } from 'lodash';
+import {
+  PkgVulnDocument,
+  PkgVulnDocumentKey,
+  PrjDocument,
+  PrjDocumentKey,
+} from '@schemas/tables';
+import { PackageVuln, Project } from '@schemas/tablenames';
+import { PackageEntity, ProjectEntity } from '@schemas/entities';
+import { normalizeAttributes } from '@core/utils';
+import { PackageLock, PkgMeta } from './package-lock.dto';
 
 type RepoMeta = { owner: string; name: string };
+type PkgVulnModel = Model<PkgVulnDocument, PkgVulnDocumentKey, 'id' | 'type'>;
+type PrjModel = Model<PrjDocument, PrjDocumentKey, 'id' | 'type'>;
 
 @Injectable()
 export class ParserService {
   constructor(
-    @InjectModel('Package')
-    readonly pkg: Model<Package, PackageKey, 'id'>,
-    @InjectModel('Project')
-    readonly prj: Model<Project, ProjectKey, 'id'>,
+    @InjectModel(PackageVuln)
+    readonly pkgVuln: PkgVulnModel,
+    @InjectModel(Project)
+    readonly prj: PrjModel
   ) {}
 
   async createLockFile(rawFileContents: string, logger?: Logger) {
@@ -33,104 +44,129 @@ export class ParserService {
       logger?.log('Content validated');
     } catch (error: any) {
       throw new Error(
-        `Cannot process content: ${error?.toString() || 'Unknown'}`,
+        `Cannot process content: ${error?.toString() || 'Unknown'}`
       );
     }
 
     return lockFile;
   }
 
-  async parseFileContents(content: string, repository: RepoMeta) {
-    const logger = new Logger(`${repository.owner}/${repository.name}`);
-    let lockFile: PackageLock;
+  async saveFileContents(lockFile: PackageLock, repo: RepoMeta) {
+    const logger = new Logger(`${repo.owner}/${repo.name}`);
+    const newLockFile = this.removeNodeModulePrefix(lockFile);
+    const pkgs = await Promise.all(
+      this.filterPackagesByDomain(newLockFile.packages).map(
+        async ([name, pkg]) => {
+          const pkgFound = await this.getPackage(name, pkg.version);
+          if (pkgFound) {
+            logger.log(`Found package ${name} in database`);
+            return pkgFound;
+          }
+          const newPkg = await this.createPackage(name, pkg);
+          logger.log(`Created package ${name}`);
+          return newPkg;
+        }
+      )
+    );
+    logger.log(`Processed ${pkgs.length ?? 0} packages`);
+
+    const prjName = `${repo.owner}/${repo.name}`;
+    const url = `https://github.com/${prjName}`;
+    const prjFound = await this.getProject(`PRJ#${prjName}`);
+    if (prjFound) {
+      logger.log(`Deleting project ${prjFound.name}`);
+      await this.deleteProject(prjFound.id);
+    }
+    const prjCreated = await this.createProject(
+      prjName,
+      url,
+      pkgs.map((p) => p.id)
+    );
+    logger.log(`Created project ${prjCreated.name}`);
+    return `Project: ${prjCreated.name}, with ${pkgs.length} packages`;
+  }
+
+  filterPackagesByDomain(pkgs: PackageLock['packages'], domain?: string) {
+    const pattern = new RegExp(`http.*${domain}.*/.*`);
+    return Array.from(pkgs).filter(
+      ([, pkg]) => !domain || pattern.test(pkg.resolved)
+    );
+  }
+
+  async getPackage(
+    name: string,
+    version: string
+  ): Promise<undefined | Document<PkgVulnDocument>> {
+    const key = `PKG#${name}#${version}`;
     try {
-      lockFile = await this.createLockFile(content, logger);
-    } catch (error: any) {
-      logger.error(`Cannot process content: ${error?.toString() || 'Unknown'}`);
+      return this.pkgVuln.get(
+        { id: key, type: key },
+        { return: 'document', attributes: normalizeAttributes(PackageEntity) }
+      );
+    } catch (err: unknown) {
       return;
     }
+  }
 
-    const domain = process.env.DOMAIN;
-    if (domain) logger.log(`Filter for domain: ${domain}`);
-    else logger.log('No domain provided, check ALL dependencies');
-
-    const pattern = new RegExp(`http.*${domain}.*/.*`);
-
-    // BUG: may violate package checksum unique constraint
-    // If multiple lambdas spawn at the same time, all of them may create its
-    // own 'instance' of the package with the same checksum
-    // fix: use another dynamodb table as 'lock' primitives
-
-    lockFile = this.removeNodeModulePrefix(lockFile);
-    const packages = await Promise.all(
-      Array.from(lockFile.packages)
-        // Save only package matching domain, only if domain is defined
-        .filter(([, pkg]) => !domain || pattern.test(pkg.resolved))
-        .map(async ([name, pkg]) => {
-          const packagesFound: Document<Package>[] = await this.pkg
-            .query()
-            .where('checksum')
-            .eq(pkg.integrity.trim())
-            .exec();
-
-          if (packagesFound.length > 1) {
-            logger.error(`Checksum collision: ${name}@${pkg.version}`);
-          }
-
-          const packageFound = packagesFound[0];
-
-          if (packageFound) {
-            logger.log(`Found package in database: ${packageFound.name}`);
-            return packageFound.id;
-          }
-
-          const pkgIdentifier = `${name}@${pkg.version}`;
-          logger.log(`Creating ${pkgIdentifier}`);
-          const savedPkg: Document<Package> = await this.pkg.create({
-            name: name.trim(),
-            checksum: pkg.integrity.trim(),
-            url: pkg.resolved.trim(),
-            version: pkg.version.trim(),
-            createdAt: new Date(),
-          });
-          logger.log(`Created ${pkgIdentifier}`);
-
-          return savedPkg.id;
-        }),
-    );
-    logger.log(`Processed ${packages?.length || 0} packages`);
-
-    // TODO: find other ways beside harcoding github
-    const name = `${repository.owner}/${repository.name}`;
-    const url = `https://github.com/${name}`;
-
-    const [project] = await this.prj.query().where('url').eq(url).exec();
-
-    if (project) {
-      const { id, ...data } = project;
-      await this.prj.update(
-        { id },
-        {
-          ...data,
-          url,
-          packages: packages as any,
-          name,
-        },
+  async getProject(prjId: string): Promise<undefined | Document<PrjDocument>> {
+    try {
+      return this.prj.get(
+        { id: prjId, type: prjId },
+        { return: 'document', attributes: normalizeAttributes(ProjectEntity) }
       );
-    } else {
-      await this.prj.create({
-        url,
-        packages: packages as any,
-        name,
-      });
+    } catch (err: unknown) {
+      return;
     }
+  }
 
-    if (project) logger.log('Updated existing project');
-    else logger.log('New project with dependencies created');
+  createPackage(name: string, pkg: PkgMeta) {
+    const key = `PKG#${name}#${pkg.version}`;
+    return this.pkgVuln.create({
+      id: key,
+      type: key,
+      name,
+      version: pkg.version,
+      url: pkg.resolved,
+      checksum: pkg.integrity,
+    });
+  }
 
-    return project
-      ? `Updated project ${name}, ${packages.length} updated`
-      : `Created project ${name}, ${packages.length} added`;
+  async createProject(name: string, url: string, pkgIds: string[]) {
+    const partitionKey = `PRJ#${name}`;
+    const project = await this.prj.create({
+      id: partitionKey,
+      type: partitionKey,
+      url,
+      name,
+    });
+    await Promise.all(
+      pkgIds.map((pkgId) =>
+        this.prj.create({
+          id: partitionKey,
+          type: pkgId,
+        })
+      )
+    );
+    return project;
+  }
+
+  async deleteProject(prjId: string) {
+    const pkgs = await this.prj
+      .query('id')
+      .eq(prjId)
+      .all(100)
+      .sort(SortOrder.descending)
+      .exec();
+    let deletions = await Promise.all(
+      chunk(pkgs, 25).map((packages) => this.prj.batchDelete(packages))
+    );
+    while (deletions.length < 0) {
+      deletions = await Promise.all(
+        chunk(deletions.map((d) => d.unprocessedItems).flat(), 25).map(
+          (packages) => this.prj.batchDelete(packages)
+        )
+      );
+    }
   }
 
   /** Filter out things prefixed with node_modules */
