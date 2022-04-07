@@ -1,42 +1,37 @@
 import { Test } from '@nestjs/testing';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import axios from 'axios';
+import { createHash } from 'crypto';
 import { SchemaModule } from '@schemas/module';
 import { ParserService } from './parser.service';
+import { SortOrder } from 'dynamoose/dist/General';
 
-const depName = 'lodash';
-const checksum =
-  'sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==';
-const newChecksum =
-  'sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==';
-const oldVer = '4.17.21';
-const lockContents = `
+const generateChecksum = (algo: string, content: string) =>
+  `${algo}-${createHash(algo).update(content).digest('base64')}`;
+
+type GenLockFileProps = {
+  name: string;
+  depName: string;
+  version: string;
+  checksum: string;
+};
+const generateLockfile = ({
+  name,
+  depName,
+  version,
+  checksum,
+}: GenLockFileProps) =>
+  `
 {
-  "name": "testing",
+  "name": "${name}",
   "version": "1.0.0",
   "lockfileVersion": 1,
   "requires": true,
   "dependencies": {
     "${depName}": {
-      "version": "${oldVer}",
-      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+      "version": "${version}",
+      "resolved": "https://registry.npmjs.org/${depName}/-/${depName}-${version}.tgz",
       "integrity": "${checksum}"
-    }
-  }
-}
-`;
-const newVer = '4.20.69';
-const updatedLockContents = `
-{
-  "name": "testing",
-  "version": "1.0.0",
-  "lockfileVersion": 1,
-  "requires": true,
-  "dependencies": {
-    "${depName}": {
-      "version": "${newVer}",
-      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
-      "integrity": "${newChecksum}"
     }
   }
 }
@@ -73,18 +68,18 @@ describe('Parser module', () => {
 
     svc = app.get(ParserService);
 
-    let pkgs = await svc.pkg.scan().limit(10).exec();
+    let pkgs = await svc.pkgVuln.scan().limit(10).exec();
     let pkgCount = 0;
     while (pkgs.length > 0) {
-      await svc.pkg.batchDelete(pkgs.map(({ id }) => ({ id })));
+      await svc.pkgVuln.batchDelete(pkgs.map(({ id, type }) => ({ id, type })));
       pkgCount += pkgs.length;
-      pkgs = await svc.pkg.scan().limit(10).exec();
+      pkgs = await svc.pkgVuln.scan().limit(10).exec();
     }
 
     let prjs = await svc.prj.scan().limit(10).exec();
     let prjCount = 0;
     while (prjs.length > 0) {
-      await svc.prj.batchDelete(prjs.map(({ id }) => ({ id })));
+      await svc.prj.batchDelete(prjs.map(({ id, type }) => ({ id, type })));
       prjCount += prjs.length;
       prjs = await svc.prj.scan().limit(10).exec();
     }
@@ -96,74 +91,164 @@ describe('Parser module', () => {
   });
 
   it('Should parse lockfile', async () => {
-    const parsed = await svc.createLockFile(lockContents);
+    const config: GenLockFileProps = {
+      name: 'hello',
+      depName: 'lodash',
+      version: '4.1.2',
+      checksum: generateChecksum('sha512', 'this is a test'),
+    };
+    const parsed = await svc.createLockFile(generateLockfile(config));
     expect(parsed).toBeDefined();
-    expect(parsed.name).toBe('testing');
+    expect(parsed.name).toBe(config.name);
   });
 
   it('Should save to db', async () => {
-    const parsed = await svc.parseFileContents(lockContents, {
+    const conf: GenLockFileProps = {
+      name: 'hello',
+      depName: 'lodash',
+      version: '4.1.2',
+      checksum: generateChecksum('sha512', 'this is a test'),
+    };
+    const lockFile = await svc.createLockFile(generateLockfile(conf));
+    const parsed = await svc.saveFileContents(lockFile, {
       owner: 'owner',
       name: 'project',
     });
     expect(parsed).toBeDefined();
+    expect(parsed).toMatch(/Project: owner\/project, with 1 packages/);
   });
 
   it('Should not save same thing twice', async () => {
-    const parsed = await svc.parseFileContents(lockContents, {
+    const conf: GenLockFileProps = {
+      name: 'hello',
+      depName: 'lodash',
+      version: '4.1.2',
+      checksum: generateChecksum('sha512', 'this is a test'),
+    };
+    const lockFile = await svc.createLockFile(generateLockfile(conf));
+    const parsed = await svc.saveFileContents(lockFile, {
       owner: 'owner',
       name: 'project',
     });
     expect(parsed).toBeDefined();
-    const pkg = await svc.pkg.scan().limit(10).exec();
+    const pkg = await svc.pkgVuln
+      .query()
+      .where('id')
+      .eq(`PKG#${conf.depName}#${conf.version}`)
+      .and()
+      .where('type')
+      .eq(`PKG#${conf.depName}#${conf.version}`)
+      .exec();
     expect(pkg.length).toBe(1);
-    const prj = await svc.prj.scan().limit(10).exec();
+    const prj = await svc.prj
+      .query()
+      .where('id')
+      .eq('PRJ#owner/project')
+      .and()
+      .where('type')
+      .eq('PRJ#owner/project')
+      .exec();
     expect(prj.length).toBe(1);
+    const pkgsInPrj = await svc.prj
+      .query()
+      .where('id')
+      .eq('PRJ#owner/project')
+      .sort(SortOrder.descending)
+      .startAt({ id: 'PRJ#owner/project', type: 'PRJ#owner/project' })
+      .exec();
+    for (const pkg of pkgsInPrj) {
+      expect(pkg.type).toMatch(
+        new RegExp(`^PKG#${conf.depName}#${conf.version}`)
+      );
+    }
   });
 
-  it('Should lookup via checksum', async () => {
-    const [found] = await svc.pkg.query().where('checksum').eq(checksum).exec();
+  it('Should lookup via package name and version', async () => {
+    const key = 'PKG#lodash#4.1.2';
+    const found = await svc.pkgVuln.get({
+      id: key,
+      type: key,
+    });
     expect(found).toBeDefined();
-    expect(found.name).toBe(depName);
+    expect(found.name).toBe('lodash');
+    expect(found.version).toBe('4.1.2');
   });
 
   it('Should bump version up', async () => {
-    await svc.parseFileContents(updatedLockContents, {
+    const conf: GenLockFileProps = {
+      name: 'hello',
+      depName: 'lodash',
+      version: '4.1.2',
+      checksum: generateChecksum('sha512', 'this is a test'),
+    };
+    const lockFile = await svc.createLockFile(generateLockfile(conf));
+    const oldLodash = lockFile.packages.get('lodash');
+    lockFile.packages.set('lodash', {
+      ...oldLodash,
+      version: '4.1.3',
+      integrity: generateChecksum('sha512', 'this is a second test'),
+    });
+    await svc.saveFileContents(lockFile, {
       owner: 'owner',
       name: 'project',
     });
-    const [newChecksumLookup] = await svc.pkg
-      .query()
-      .where('checksum')
-      .eq(newChecksum)
-      .exec();
-    // Ensure old package still exists
-    expect(newChecksumLookup).toBeDefined();
+    const newKey = 'PKG#lodash#4.1.3';
+    const newPkg = await svc.pkgVuln.get({
+      id: newKey,
+      type: newKey,
+    });
+    expect(newPkg).toBeDefined();
+    expect(newPkg.name).toBe('lodash');
+    expect(newPkg.version).toBe('4.1.3');
 
-    const [prj] = await svc.prj
+    const oldKey = 'PKG#lodash#4.1.2';
+    const oldPkg = await svc.pkgVuln.get({
+      id: oldKey,
+      type: oldKey,
+    });
+    expect(oldPkg).toBeDefined();
+    expect(oldPkg.name).toBe('lodash');
+    expect(oldPkg.version).toBe('4.1.2');
+
+    const pkgsInPrj = await svc.prj
       .query()
-      .where('url')
-      .eq('https://github.com/owner/project')
+      .where('id')
+      .eq('PRJ#owner/project')
+      .sort(SortOrder.descending)
+      .startAt({ id: 'PRJ#owner/project', type: 'PRJ#owner/project' })
       .exec();
-    await prj.populate();
-    // ensure packages from project is the same as new package
-    expect(prj.packages.length).toBe(1);
-    expect(prj.packages).toMatchObject([newChecksumLookup]);
+    expect(pkgsInPrj.length).toBe(1);
+    expect(pkgsInPrj[0].type).toBe(newKey);
   });
 
   it('Should remove dependency', async () => {
-    await svc.parseFileContents(deletedLockContents, {
+    const lockFile = await svc.createLockFile(deletedLockContents);
+    await svc.saveFileContents(lockFile, {
       owner: 'owner',
       name: 'project',
     });
-    const [prj] = await svc.prj
+    const prj = await svc.getProject('PRJ#owner/project');
+    expect(prj).toBeDefined();
+    expect(prj.name).toBe('owner/project');
+    expect(prj.url).toBe('https://github.com/owner/project');
+    const pkgs = await Promise.all([
+      svc.getPackage('lodash', '4.1.2'),
+      svc.getPackage('lodash', '4.1.3'),
+    ]);
+    for (const pkg of pkgs) {
+      // Ensure our packages are not deleted
+      // even if its no longer related to a project
+      expect(pkg).toBeDefined();
+    }
+    const pkgsInPrj = await svc.prj
       .query()
-      .where('url')
-      .eq('https://github.com/owner/project')
+      .where('id')
+      .eq('PRJ#owner/project')
+      .sort(SortOrder.descending)
+      .startAt({ id: 'PRJ#owner/project', type: 'PRJ#owner/project' })
       .exec();
-    await prj.populate();
-    expect(prj.packages).toBeDefined();
-    expect(prj.packages.length).toBe(0);
+    // Ensures no packages are associated to this project
+    expect(pkgsInPrj.length).toBe(0);
   });
 
   it('Should parse and save open-source package-lock file(s)', async () => {
@@ -175,30 +260,27 @@ describe('Parser module', () => {
     const { data, status } = await axios.get(source.url);
     expect(status).toBe(200);
     const [owner, name] = source.repo.split('/');
-    await svc.parseFileContents(JSON.stringify(data), { owner, name });
-    const [res] = await svc.prj
-      .query()
-      .where('url')
-      .eq(`https://github.com/${source.repo}`)
-      .limit(1)
-      .exec();
-    expect(res).toBeDefined();
-    expect(res.name).toBe(source.repo);
+    const lockFile = await svc.createLockFile(JSON.stringify(data));
+    await svc.saveFileContents(lockFile, { owner, name });
+    const prj = await svc.getProject('PRJ#lodash/lodash');
+    expect(prj).toBeDefined();
+    expect(prj.url).toBe(`https://github.com/${source.repo}`);
+    expect(prj.name).toBe(source.repo);
   });
 
   afterAll(async () => {
+    let pkgs = await svc.pkgVuln.scan().limit(10).exec();
     let pkgCount = 0;
-    let pkgs = await svc.pkg.scan().limit(10).exec();
     while (pkgs.length > 0) {
-      await svc.pkg.batchDelete(pkgs.map(({ id }) => ({ id })));
+      await svc.pkgVuln.batchDelete(pkgs.map(({ id, type }) => ({ id, type })));
       pkgCount += pkgs.length;
-      pkgs = await svc.pkg.scan().limit(10).exec();
+      pkgs = await svc.pkgVuln.scan().limit(10).exec();
     }
 
-    let prjCount = 0;
     let prjs = await svc.prj.scan().limit(10).exec();
+    let prjCount = 0;
     while (prjs.length > 0) {
-      await svc.prj.batchDelete(prjs.map(({ id }) => ({ id })));
+      await svc.prj.batchDelete(prjs.map(({ id, type }) => ({ id, type })));
       prjCount += prjs.length;
       prjs = await svc.prj.scan().limit(10).exec();
     }
