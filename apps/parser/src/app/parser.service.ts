@@ -22,6 +22,8 @@ type PrjModel = Model<PrjDocument, PrjDocumentKey, 'id' | 'type'>;
 
 @Injectable()
 export class ParserService {
+  domain: string;
+
   constructor(
     @InjectModel(PackageVuln)
     readonly pkgVuln: PkgVulnModel,
@@ -86,10 +88,10 @@ export class ParserService {
     return `Project: ${prjCreated.name}, with ${pkgs.length} packages`;
   }
 
-  filterPackagesByDomain(pkgs: PackageLock['packages'], domain?: string) {
-    const pattern = new RegExp(`http.*${domain}.*/.*`);
+  filterPackagesByDomain(pkgs: PackageLock['packages']) {
+    const pattern = new RegExp(`http.*${this.domain}.*/.*`);
     return Array.from(pkgs).filter(
-      ([, pkg]) => !domain || pattern.test(pkg.resolved)
+      ([, pkg]) => !this.domain || pattern.test(pkg.resolved)
     );
   }
 

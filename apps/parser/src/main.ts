@@ -10,6 +10,8 @@ export const handler: Handler = async (event: S3CreateEvent) => {
   const parser = app.get(ParserService);
   const s3 = new S3({ logger: new Logger('aws-sdk/S3') });
 
+  parser.domain = process.env.DOMAIN;
+
   const results: string[] = [];
   for (const record of event.Records) {
     const key = decodeURIComponent(record.s3.object.key);
