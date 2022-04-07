@@ -30,6 +30,11 @@ export const PrjSchema = new Schema({
   type: {
     type: String,
     rangeKey: true,
+    index: {
+      name: 'PkgGSI',
+      global: true,
+      rangeKey: 'id',
+    },
   },
 
   name: String,
