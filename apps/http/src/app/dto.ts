@@ -1,130 +1,46 @@
 import { IsNonEmptyString } from '@core/validator';
-import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
-import { Package } from '@schemas/packages';
-import { Project } from '@schemas/projects';
-import { Vulnerability } from '@schemas/vulnerabilities';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { OmitType } from '@nestjs/swagger';
+import { PackageEntity, ProjectEntity, VulnEntity } from '@schemas/entities';
 import { Expose, Transform, Type } from 'class-transformer';
-import { IsInt, IsOptional, IsPositive, IsUUID } from 'class-validator';
+import { IsNumber, IsOptional, Matches, Max, Min } from 'class-validator';
 
-export class VulnDto implements Vulnerability {
-  @Expose()
-  @ApiProperty()
-  @IsUUID()
-  id: string;
-
-  @Expose()
-  @ApiPropertyOptional()
+export class PaginationDto {
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 10 })
   @IsOptional()
-  @IsNonEmptyString()
-  cve?: string;
-
-  @Expose()
-  @ApiProperty()
-  @IsNonEmptyString()
-  title: string;
-
-  @Expose()
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsNonEmptyString()
-  description?: string;
-
-  @Expose()
-  @ApiProperty({ minimum: 1 })
   @Transform((param) => +param.value)
-  @IsPositive()
-  @IsInt()
-  severity: number;
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Matches(/^PKG#|^PRJ#|^VLN#/)
+  lastKey?: string;
 }
 
-export class PackageDetailDto implements Package {
+export class VulnDto extends OmitType(VulnEntity, ['id', 'type']) {
+  @IsNonEmptyString()
+  @Matches(/^VLN#/)
   @Expose()
-  @ApiProperty()
   id: string;
+}
 
-  @Expose()
-  @ApiProperty()
-  name: string;
+export class PackageDto extends OmitType(PackageEntity, ['type']) {}
 
-  @Expose()
-  @ApiProperty()
-  version: string;
-
-  @Expose()
-  @ApiProperty()
-  url: string;
-
-  @Expose()
-  @ApiProperty()
-  checksum: string;
-
+export class PackageDetailDto extends PackageDto {
   @Expose()
   @ApiPropertyOptional({ type: [VulnDto] })
   @Type(() => VulnDto)
-  vulns?: VulnDto[];
-
-  @Expose()
-  @ApiProperty({ type: Date })
-  @Type(() => Date)
-  createdAt: Date;
+  vulns?: Array<VulnDto>;
 }
 
-export class PackageDto extends OmitType(PackageDetailDto, ['vulns']) {
-  @Expose()
-  @ApiProperty()
-  id: string;
+export class ProjectDto extends OmitType(ProjectEntity, ['type']) {}
 
-  @Expose()
-  @ApiProperty()
-  name: string;
-
-  @Expose()
-  @ApiProperty()
-  version: string;
-
-  @Expose()
-  @ApiProperty()
-  url: string;
-
-  @Expose()
-  @ApiProperty()
-  checksum: string;
-
-  @Expose()
-  @ApiProperty({ type: Date })
-  @Type(() => Date)
-  createdAt: Date;
-}
-
-export class ProjectDetailDto implements Omit<Project, 'packages'> {
-  @Expose()
-  @ApiProperty()
-  id: string;
-
-  @Expose()
-  @ApiProperty()
-  name: string;
-
-  @Expose()
-  @ApiProperty()
-  url: string;
-
+export class ProjectDetailDto extends ProjectDto {
   @Expose()
   @ApiPropertyOptional({ type: [PackageDto] })
   @Type(() => PackageDto)
-  packages?: PackageDto[];
-}
-
-export class ProjectDto extends OmitType(ProjectDetailDto, ['packages']) {
-  @Expose()
-  @ApiProperty()
-  id: string;
-
-  @Expose()
-  @ApiProperty()
-  name: string;
-
-  @Expose()
-  @ApiProperty()
-  url: string;
+  packages: Array<PackageDto>;
 }
