@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  NotFoundException,
-  Param,
-  ParseUUIDPipe,
-  Query,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
 import {
   ApiOkResponse,
   ApiOperation,
@@ -15,9 +7,9 @@ import {
   OmitType,
   PartialType,
 } from '@nestjs/swagger';
-import { ProjectDetailDto, ProjectDto } from '../dto';
+import { plainToInstance } from 'class-transformer';
+import { PaginationDto, ProjectDetailDto, ProjectDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
-import { PaginationDto } from '../query-service.abstract';
 import { ProjectsService } from './projects.service';
 
 class ProjectSearchInputDto extends PartialType(
@@ -43,7 +35,7 @@ export class ProjectsController {
     @Query()
     { limit, lastKey, ...query }: ProjectSearchInputDto
   ): Promise<ProjectDto[]> {
-    return this.projectsService.findAll(limit, lastKey, query, ProjectDto);
+    return this.projectsService.findAll(limit, lastKey, query);
   }
 
   @ApiOperation({ summary: 'Project with given ID' })
@@ -52,12 +44,9 @@ export class ProjectsController {
   })
   @UseInterceptors(new DtoConformInterceptor(ProjectDto))
   @Get(':id')
-  async findOne(
-    @Param('id', new ParseUUIDPipe()) id: string
-  ): Promise<ProjectDto> {
-    const res = await this.projectsService.findOne(id, ProjectDto);
-    if (!res) throw new NotFoundException();
-    return res;
+  async findOne(@Param('id') id: string): Promise<ProjectDto> {
+    const prj = await this.projectsService.findOne(id);
+    return plainToInstance(ProjectDto, prj);
   }
 
   @ApiOperation({
@@ -69,26 +58,9 @@ export class ProjectsController {
   @UseInterceptors(new DtoConformInterceptor(ProjectDetailDto))
   @Get(':id/packages')
   async packagesInProject(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Query() { lastKey, limit = 10 }: PaginationDto
+    @Param('id') id: string,
+    @Query() { lastKey, limit }: PaginationDto
   ): Promise<ProjectDetailDto> {
-    const response = await this.projectsService.findOne(id, ProjectDetailDto);
-    if (!response) throw new NotFoundException();
-
-    const pkgIds = response.packages as unknown as string[];
-    let lastKeyIdx: number;
-    if (lastKey) {
-      lastKeyIdx = pkgIds.indexOf(lastKey);
-      if (lastKeyIdx < 0) throw new NotFoundException('lastKey not found');
-      response.packages =
-        response.packages?.length - 1 > lastKeyIdx
-          ? response.packages.slice(lastKeyIdx + 1, lastKeyIdx + limit)
-          : []; // no more items after lastKey
-    } else {
-      response.packages = response.packages?.slice(0, limit);
-    }
-
-    await response.populate();
-    return response;
+    return this.projectsService.findOneWithPackages(id, lastKey, limit);
   }
 }
