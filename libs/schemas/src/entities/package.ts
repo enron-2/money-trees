@@ -1,20 +1,25 @@
 import { IsBase64Hash, IsNonEmptyString } from '@core/validator';
-import { IsUrl, Matches } from 'class-validator';
-import { Expose } from 'class-transformer';
+import { Equals, IsUrl, Matches, validateSync } from 'class-validator';
+import { Expose, instanceToPlain, plainToInstance } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  BaseEntity,
+  EntityConstructor,
+  EntityType,
+  KeyPrefix,
+  MainTableOverlap,
+} from './entity';
 
-export class PackageEntity {
-  @IsNonEmptyString()
-  @Matches(/^PKG#/)
-  @Expose()
-  @ApiProperty()
-  id: string;
+const pkgKeyRegex = new RegExp(`^${KeyPrefix.Package}#`);
 
-  @IsNonEmptyString()
-  @Matches(/^PKG#/)
-  @Expose()
-  @ApiProperty()
-  type: string;
+export type PlainPackageEntity = Omit<
+  MainTableOverlap<PackageEntity>,
+  'pk' | 'sk' | 'type'
+> & { id: string };
+
+export class PackageEntity extends BaseEntity {
+  @Equals(EntityType.Package)
+  type: EntityType.Package;
 
   @IsNonEmptyString()
   @Expose()
@@ -26,13 +31,50 @@ export class PackageEntity {
   @ApiProperty()
   version: string;
 
+  @IsBase64Hash()
+  @Expose()
+  @ApiProperty()
+  checksum: string;
+
   @IsUrl()
   @Expose()
   @ApiProperty()
   url: string;
 
-  @IsBase64Hash()
+  @Matches(pkgKeyRegex)
   @Expose()
   @ApiProperty()
-  checksum: string;
+  get id(): string {
+    return this.pk;
+  }
+
+  @Matches(pkgKeyRegex)
+  get pk(): string {
+    return `${KeyPrefix.Package}#${this.name}#${this.version}`;
+  }
+
+  @Matches(pkgKeyRegex)
+  get sk(): string {
+    return this.pk;
+  }
+
+  public toPlain(): PlainPackageEntity {
+    return instanceToPlain(this, {
+      excludeExtraneousValues: true,
+    }) as PlainPackageEntity;
+  }
+
+  static fromDocument(plainObj: EntityConstructor<PackageEntity, 'pk' | 'sk'>) {
+    const created = plainToInstance(PackageEntity, plainObj);
+    if (plainObj.pk && created.pk !== plainObj.pk) {
+      throw Error('pk supplied mismatch');
+    }
+    if (plainObj.sk && created.sk !== plainObj.sk) {
+      throw Error('sk supplied mismatch');
+    }
+    const validationErrors = validateSync(created);
+    if (validationErrors.length > 0)
+      throw new Error(`Failed to validate:\n${validationErrors}`);
+    return created;
+  }
 }
