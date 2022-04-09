@@ -19,6 +19,8 @@ export abstract class BaseEntity {
   abstract get pk(): string;
   abstract get sk(): string;
 
+  public abstract toPlain(): unknown;
+
   public keys(): MainTableKey {
     return plainToInstance(MainTableKey, { pk: this.pk, sk: this.sk });
   }
