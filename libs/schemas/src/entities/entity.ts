@@ -27,20 +27,26 @@ export abstract class BaseEntity {
 }
 
 export enum EntityType {
-  PACKAGE = 'Package',
-  PROJECT = 'Project',
-  VULN = 'VULN',
+  Package = 'Package',
+  Project = 'Project',
+  Vuln = 'Vuln',
 }
 
 export enum KeyPrefix {
-  PACKAGE = 'PKG',
-  PROJECT = 'PRJ',
-  VULN = 'VLN',
+  Package = 'PKG',
+  Project = 'PRJ',
+  Vuln = 'VLN',
 }
 
-type Overlap<T, U> = { [K in keyof T & keyof U]: U[K] };
-type Optional<T extends object, K extends keyof T = keyof T> = Omit<T, K> &
+export type Overlap<T, U> = { [K in keyof T & keyof U]: U[K] };
+export type Optional<T extends object, K extends keyof T = keyof T> = Omit<
+  T,
+  K
+> &
   Partial<Pick<T, K>>;
+
+/** Makes EntityConstructor easier to read */
+export type MainTableOverlap<T> = Overlap<MainTableDoc, T>;
 
 /**
  * Select properties needed to construct class T
@@ -48,7 +54,5 @@ type Optional<T extends object, K extends keyof T = keyof T> = Omit<T, K> &
  */
 export type EntityConstructor<
   T,
-  U extends keyof MainTableDoc | void = void
-> = U extends keyof Overlap<T, MainTableDoc>
-  ? Optional<Overlap<T, MainTableDoc>, U>
-  : Overlap<T, MainTableDoc>;
+  U extends keyof MainTableOverlap<T> = keyof MainTableOverlap<T>
+> = Optional<MainTableOverlap<T>, U>;
