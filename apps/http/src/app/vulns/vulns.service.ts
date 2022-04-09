@@ -1,80 +1,76 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Vulnerability, VulnerabilityKey } from '@schemas/vulnerabilities';
-import { instanceToPlain, plainToInstance } from 'class-transformer';
+import {
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import { v4 } from 'uuid';
-import { PackagesService } from '../packages/packages.service';
-import { QueryService } from '../query-service.abstract';
+import * as tablenames from '@schemas/tablenames';
+import { PkgVulnDocument, PkgVulnDocumentKey } from '@schemas/tables';
 import { CreateVulnInput, UpdateVulnInput } from './vulns.dto';
+import { AttributeType, normalizeAttributes } from '@core/utils';
+import { VulnEntity } from '@schemas/entities';
+import { plainToInstance } from 'class-transformer';
+import { PackageDto, VulnDto } from '../dto';
 
-// nx generatePackageJson does not pickup uuid when using import aliasing
-const uuid = v4;
+type PkgVulnModel = Model<PkgVulnDocument, PkgVulnDocumentKey, 'id' | 'type'>;
 
 @Injectable()
-export class VulnsService extends QueryService<
-  Vulnerability,
-  VulnerabilityKey
-> {
+export class VulnsService {
   constructor(
-    @InjectModel('Vuln')
-    readonly vulns: Model<Vulnerability, VulnerabilityKey, 'id'>,
-    private readonly pkgSvc: PackagesService
-  ) {
-    super(vulns);
+    @InjectModel(tablenames.PackageVuln)
+    private readonly pkgVuln: PkgVulnModel
+  ) {}
+
+  // TODO: how should you remove duplicates? and how to paginate?
+  // I can find all, but pagination prolly sux
+  // Since we would need both PKG and VLN
+  // async findAll() {
+  //   throw new NotImplementedException();
+  // }
+
+  async findOne(id: string, attrs?: AttributeType<unknown>) {
+    const [vuln] = await this.pkgVuln
+      .query()
+      .using('VulnGSI')
+      .where('type')
+      .eq(id)
+      .limit(1)
+      .attributes(normalizeAttributes(attrs ?? VulnEntity))
+      .exec();
+    if (!vuln) throw new NotFoundException(`ID: ${id} not found`);
+    return plainToInstance(
+      VulnDto,
+      { ...vuln, id: vuln.type },
+      { excludeExtraneousValues: true }
+    );
   }
 
   /**
    * Get list of packages affected by the vuln
    */
   async packagesAffected(id: string, limit = 10, lastKey?: string) {
-    const vuln = await this.vulns.get({ id });
-    if (!vuln) throw new NotFoundException();
-    const scanner = this.pkgSvc.packages
-      .scan()
-      .where('vulns')
-      .contains(vuln.id);
-    if (lastKey) scanner.startAt({ id: lastKey });
-    return scanner.exec().then((res) => res.slice(0, limit));
-  }
-
-  /**
-   * Prepare linking a package to a vuln
-   * Updates Package.vulns array
-   * Does not run any mutation operations
-   */
-  private async linkToPackage(vulnId: string, packageId: string) {
-    const pkg = await this.pkgSvc.findOne(packageId);
-    if (!pkg.vulns && !Array.isArray(pkg.vulns)) {
-      // First vuln on package
-      pkg.vulns = [vulnId] as any;
-    } else if (!pkg.vulns.find((v: any) => v === vulnId)) {
-      // Add new vuln to package
-      pkg.vulns.push(vulnId as any);
-    } else {
-      // vuln found in package, no updates
-      return;
+    const queryBuilder = this.pkgVuln
+      .query()
+      .using('VulnGSI')
+      .where('type')
+      .eq(id)
+      .limit(limit)
+      .attributes(['id']);
+    if (lastKey) {
+      queryBuilder.startAt({
+        id: lastKey,
+        type: id,
+      });
     }
-    return pkg;
-  }
-
-  /**
-   * Prepare unlinking a package from a vuln
-   * Updates Package.vulns array
-   * Does not run any mutation operations
-   */
-  private async unlinkFromPackage(vulnId: string) {
-    // Get all packages containing vulnId
-    const pkgs = await this.pkgSvc.packages
-      .scan()
-      .where('vulns')
-      .contains(vulnId)
-      .all()
-      .exec();
-    return pkgs.map((pkg) => ({
-      ...pkg,
-      // Remove vulnId from vulns
-      vulns: pkg.vulns.filter((vId: any) => vId !== vulnId),
-    }));
+    const pkgIds = await queryBuilder.exec();
+    const resolvedPkgs = await this.pkgVuln.batchGet(
+      pkgIds.map((p) => ({
+        id: p.id,
+        type: p.id,
+      }))
+    );
+    return plainToInstance(PackageDto, resolvedPkgs);
   }
 
   /**
@@ -82,19 +78,34 @@ export class VulnsService extends QueryService<
    * Also associate given packageIds to the new vulnerability
    */
   async create(input: CreateVulnInput) {
-    const { packageIds, ...data } = input;
-    const vulnId = uuid();
-    const pkgs = await Promise.all(
-      packageIds.map((id) => this.linkToPackage(vulnId, id))
-    ).then((res) => res.filter((p) => !!p));
-
-    const newVuln = this.vulns.transaction.create({ id: vulnId, ...data });
-    const updatedPkgs = pkgs.map(({ id, ...data }) =>
-      this.pkgSvc.packages.transaction.update({ id }, data)
+    const { packageIds, ...vulnProperties } = input;
+    const resolvedPkgs = await this.pkgVuln.batchGet(
+      packageIds.map((p) => ({
+        id: p,
+        type: p,
+      }))
     );
-    await this.transaction([newVuln, ...updatedPkgs]);
-
-    return this.vulns.get({ id: vulnId });
+    for (const id of packageIds) {
+      const found = resolvedPkgs.find((pkg) => pkg.id === id);
+      if (!found) {
+        throw new NotFoundException(`Package with ID: ${id} not found`);
+      }
+    }
+    const vulnEncodedSeverity = String.fromCodePoint(input.severity + 32);
+    const vulnId = `VLN#${vulnEncodedSeverity}#${input.name}`;
+    const { unprocessedItems } = await this.pkgVuln.batchPut(
+      resolvedPkgs.map((pkg) => ({
+        id: pkg.id,
+        type: vulnId,
+        ...vulnProperties,
+      }))
+    );
+    if (unprocessedItems.length > 0) {
+      throw new InternalServerErrorException(
+        `BatchPut failed with ${unprocessedItems.length} items unprocessed`
+      );
+    }
+    return { ...input, id: vulnId };
   }
 
   /**
@@ -102,72 +113,81 @@ export class VulnsService extends QueryService<
    * Does not change package association
    */
   async update(id: string, input: UpdateVulnInput) {
-    const exists = await this.vulns.get({ id });
-    if (!exists) throw new NotFoundException();
-    const newData = plainToInstance(
-      UpdateVulnInput,
-      {
-        ...exists,
-        ...instanceToPlain(input, { exposeUnsetFields: false }),
-      },
-      {
-        excludeExtraneousValues: true,
-      }
+    const oldVuln = await this.findOne(id);
+    if (!oldVuln) throw new NotFoundException();
+    delete oldVuln.id;
+
+    const pkgIds = await this.pkgVuln
+      .query()
+      .using('VulnGSI')
+      .where('type')
+      .eq(id)
+      .attributes(['id'])
+      .exec();
+
+    const updatedVuln: Omit<VulnDto, 'id'> = {
+      ...oldVuln,
+      ...plainToInstance(
+        UpdateVulnInput,
+        { ...input },
+        { exposeUnsetFields: false }
+      ),
+    };
+
+    const vulnId = input.severity
+      ? `VLN#${String.fromCodePoint(updatedVuln.severity + 32)}#${
+          updatedVuln.name
+        }`
+      : id;
+
+    if (input.severity) {
+      await this.pkgVuln.batchDelete(
+        pkgIds.map((pkg) => ({
+          id: pkg.id,
+          type: id,
+        }))
+      );
+    }
+
+    await this.pkgVuln.batchPut(
+      pkgIds.map((pkg) => ({
+        id: pkg.id,
+        type: vulnId,
+        ...updatedVuln,
+      }))
     );
-    return this.vulns.update({ id }, newData);
+
+    return plainToInstance(VulnDto, { ...updatedVuln, id: vulnId });
   }
 
-  /**
-   * Link a Vulnerability to a Package
-   * @returns populated package
-   */
-  async includePackage(vulnId: string, packageId: string) {
-    const [vuln, pkg] = await this.resolveEntities(vulnId, packageId);
-    if (!Array.isArray(pkg.vulns)) {
-      // Initialise array
-      pkg.vulns = [vuln.id] as any;
-    } else if (!pkg.vulns.find((vId: any) => vId === vuln.id)) {
-      // Push if it does not exist
-      pkg.vulns.push(vuln.id as any);
-    } else {
-      // Vuln already here
-      return pkg.populate();
-    }
-    const { id, ...data } = pkg;
-    const updated = await this.pkgSvc.packages.update({ id }, data);
-    return updated.populate();
+  async linkToPkg(pkgId: string, vulnId: string) {
+    const vuln = await this.findOne(vulnId);
+    if (!vuln) throw new NotFoundException();
+    const alreadyExists = await this.pkgVuln.get({
+      id: pkgId,
+      type: vuln.id,
+    });
+    if (alreadyExists) throw new ConflictException('Vuln already exists');
+    return this.pkgVuln.create({
+      id: pkgId,
+      type: vuln.id,
+      name: vuln.name,
+      description: vuln.description,
+      severity: vuln.severity,
+    });
   }
 
-  /**
-   * Unlink a Vulnerability from a Package
-   * Does not delete it
-   * @returns populated package
-   */
-  async excludePackage(vulnId: string, packageId: string) {
-    const [vuln, pkg] = await this.resolveEntities(vulnId, packageId);
-    if (!Array.isArray(pkg.vulns)) {
-      // No vuln array so no need to remove
-      return pkg.populate();
-    }
-    // Get only vulns with id != vulnId
-    pkg.vulns = pkg.vulns.filter((v: any) => v !== vuln.id);
-    const { id, ...data } = pkg;
-    const updated = await this.pkgSvc.packages.update({ id }, data);
-    return updated.populate();
-  }
-
-  /**
-   * Resolve ids into their entities
-   * Throws not found when at least 1 of the id is invalid
-   */
-  private async resolveEntities(vulnId: string, packageId: string) {
-    const vuln = await this.vulns.get({ id: vulnId });
-    if (!vuln) throw new NotFoundException('VulnId not found');
-
-    const pkg = await this.pkgSvc.findOne(packageId);
-    if (!pkg) throw new NotFoundException('PackageId not found');
-
-    return [vuln, pkg] as const;
+  async unlinkFromPkg(pkgId: string, vulnId: string) {
+    const existing = await this.pkgVuln.get({
+      id: pkgId,
+      type: vulnId,
+    });
+    if (!existing) throw new NotFoundException();
+    await this.pkgVuln.delete({
+      id: pkgId,
+      type: vulnId,
+    });
+    return existing;
   }
 
   /**
@@ -175,16 +195,27 @@ export class VulnsService extends QueryService<
    * Updates all packages affected (unlinking)
    */
   async delete(id: string) {
-    const toDelete = await this.vulns.get({ id });
-    if (!toDelete) throw new NotFoundException();
-    const pkgs = await this.unlinkFromPackage(id);
-
-    const deletedVuln = this.vulns.transaction.delete({ id });
-    const updatedPkgs = pkgs.map(({ id, ...data }) =>
-      this.pkgSvc.packages.transaction.update({ id }, data)
+    const pkgsToModify = await this.pkgVuln
+      .query()
+      .using('VulnGSI')
+      .where('type')
+      .eq(id)
+      .exec();
+    if (pkgsToModify.length === 0) throw new NotFoundException();
+    const vulnToDelete = await this.pkgVuln.get({
+      type: id,
+      id: pkgsToModify[0].id,
+    });
+    const { unprocessedItems } = await this.pkgVuln.batchDelete(
+      pkgsToModify.map((pkg) => ({
+        id: pkg.id,
+        type: id,
+      }))
     );
-    await this.transaction([...updatedPkgs, deletedVuln]);
-
-    return toDelete;
+    if (unprocessedItems.length > 0)
+      throw new InternalServerErrorException(
+        `Failed to delete ${unprocessedItems.length} items`
+      );
+    return plainToInstance(VulnDto, vulnToDelete);
   }
 }
