@@ -1,21 +1,11 @@
 import { IsBase64Hash, IsNonEmptyString } from '@core/validator';
-import { Equals, IsUrl, Matches, validateSync } from 'class-validator';
-import { Expose, instanceToPlain, plainToInstance } from 'class-transformer';
+import { Equals, IsUrl, Matches } from 'class-validator';
+import { Expose, instanceToPlain } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  BaseEntity,
-  EntityConstructor,
-  EntityType,
-  KeyPrefix,
-  MainTableOverlap,
-} from './entity';
+import { BaseEntity, MainTableDoc, PlainEntity } from './entity';
+import { EntityType, KeyPrefix } from './enums';
 
 const pkgKeyRegex = new RegExp(`^${KeyPrefix.Package}#`);
-
-export type PlainPackageEntity = Omit<
-  MainTableOverlap<PackageEntity>,
-  'pk' | 'sk' | 'type'
-> & { id: string };
 
 export class PackageEntity extends BaseEntity {
   @Equals(EntityType.Package)
@@ -58,23 +48,13 @@ export class PackageEntity extends BaseEntity {
     return this.pk;
   }
 
-  public toPlain(): PlainPackageEntity {
+  public toPlain() {
     return instanceToPlain(this, {
       excludeExtraneousValues: true,
-    }) as PlainPackageEntity;
+    }) as PlainEntity<PackageEntity>;
   }
 
-  static fromDocument(plainObj: EntityConstructor<PackageEntity, 'pk' | 'sk'>) {
-    const created = plainToInstance(PackageEntity, plainObj);
-    if (plainObj.pk && created.pk !== plainObj.pk) {
-      throw Error('pk supplied mismatch');
-    }
-    if (plainObj.sk && created.sk !== plainObj.sk) {
-      throw Error('sk supplied mismatch');
-    }
-    const validationErrors = validateSync(created);
-    if (validationErrors.length > 0)
-      throw new Error(`Failed to validate:\n${validationErrors}`);
-    return created;
+  static fromDocument(plain: Partial<MainTableDoc>) {
+    return BaseEntity._fromDocument(plain, PackageEntity);
   }
 }

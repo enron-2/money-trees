@@ -1,4 +1,4 @@
-import { EntityType } from './entity';
+import { EntityType } from './enums';
 import { ProjectEntity } from './project';
 
 describe('Project entity loader', () => {

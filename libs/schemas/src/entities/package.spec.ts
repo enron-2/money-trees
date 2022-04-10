@@ -1,6 +1,6 @@
-import { EntityType } from './entity';
 import { PackageEntity } from './package';
 import { createHash } from 'crypto';
+import { EntityType } from './enums';
 
 describe('Package entity loader', () => {
   it('should create successfully', () => {

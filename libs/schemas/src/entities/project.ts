@@ -1,21 +1,11 @@
 import { IsNonEmptyString } from '@core/validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose, instanceToPlain, plainToInstance } from 'class-transformer';
-import { Equals, IsUrl, Matches, validateSync } from 'class-validator';
-import {
-  BaseEntity,
-  EntityConstructor,
-  EntityType,
-  KeyPrefix,
-  MainTableOverlap,
-} from './entity';
+import { Expose, instanceToPlain } from 'class-transformer';
+import { Equals, IsUrl, Matches } from 'class-validator';
+import { BaseEntity, MainTableDoc, PlainEntity } from './entity';
+import { EntityType, KeyPrefix } from './enums';
 
 const prjKeyRegex = new RegExp(`^${KeyPrefix.Project}#`);
-
-export type PlainProjectEntity = Omit<
-  MainTableOverlap<ProjectEntity>,
-  'pk' | 'sk' | 'type'
-> & { id: string };
 
 export class ProjectEntity extends BaseEntity {
   @Equals(EntityType.Project)
@@ -48,23 +38,13 @@ export class ProjectEntity extends BaseEntity {
     return this.pk;
   }
 
-  public toPlain(): PlainProjectEntity {
+  public toPlain() {
     return instanceToPlain(this, {
       excludeExtraneousValues: true,
-    }) as PlainProjectEntity;
+    }) as PlainEntity<ProjectEntity>;
   }
 
-  static fromDocument(plain: EntityConstructor<ProjectEntity, 'pk' | 'sk'>) {
-    const created = plainToInstance(ProjectEntity, plain);
-    if (plain.pk && created.pk !== plain.pk) {
-      throw Error('pk supplied mismatch');
-    }
-    if (plain.sk && created.sk !== plain.sk) {
-      throw Error('sk supplied mismatch');
-    }
-    const validationErrors = validateSync(created);
-    if (validationErrors.length > 0)
-      throw new Error(`Failed to validate:\n${validationErrors}`);
-    return created;
+  static fromDocument(plain: Partial<MainTableDoc>) {
+    return BaseEntity._fromDocument(plain, ProjectEntity);
   }
 }
