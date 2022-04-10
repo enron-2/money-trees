@@ -68,22 +68,18 @@ describe('Parser module', () => {
 
     svc = app.get(ParserService);
 
-    let pkgs = await svc.pkgVuln.scan().limit(10).exec();
-    let pkgCount = 0;
-    while (pkgs.length > 0) {
-      await svc.pkgVuln.batchDelete(pkgs.map(({ id, type }) => ({ id, type })));
-      pkgCount += pkgs.length;
-      pkgs = await svc.pkgVuln.scan().limit(10).exec();
+    const scanner = () =>
+      svc.model.scan().limit(25).attributes(['sk', 'pk']).exec();
+    let items = await scanner();
+    let count = 0;
+    while (items.length > 0) {
+      count += items.length;
+      await svc.model.batchDelete(
+        items.map((item) => ({ sk: item.sk, pk: item.pk }))
+      );
+      items = await scanner();
     }
-
-    let prjs = await svc.prj.scan().limit(10).exec();
-    let prjCount = 0;
-    while (prjs.length > 0) {
-      await svc.prj.batchDelete(prjs.map(({ id, type }) => ({ id, type })));
-      prjCount += prjs.length;
-      prjs = await svc.prj.scan().limit(10).exec();
-    }
-    console.log(`Deleted ${pkgCount} packages\nDeleted ${prjCount} projects`);
+    console.log(`Deleted ${count} entries`);
   }, 5 * 60000);
 
   it('Should be defined', () => {
@@ -131,43 +127,42 @@ describe('Parser module', () => {
       name: 'project',
     });
     expect(parsed).toBeDefined();
-    const pkg = await svc.pkgVuln
+    const pkg = await svc.model
       .query()
-      .where('id')
+      .where('pk')
       .eq(`PKG#${conf.depName}#${conf.version}`)
       .and()
-      .where('type')
+      .where('sk')
       .eq(`PKG#${conf.depName}#${conf.version}`)
       .exec();
     expect(pkg.length).toBe(1);
-    const prj = await svc.prj
+    const prj = await svc.model
       .query()
-      .where('id')
+      .where('pk')
       .eq('PRJ#owner/project')
       .and()
-      .where('type')
+      .where('sk')
       .eq('PRJ#owner/project')
       .exec();
     expect(prj.length).toBe(1);
-    const pkgsInPrj = await svc.prj
+    const pkgsInPrj = await svc.model
       .query()
-      .where('id')
+      .where('pk')
       .eq('PRJ#owner/project')
       .sort(SortOrder.descending)
-      .startAt({ id: 'PRJ#owner/project', type: 'PRJ#owner/project' })
+      .startAt({ pk: 'PRJ#owner/project', sk: 'PRJ#owner/project' })
       .exec();
     for (const pkg of pkgsInPrj) {
-      expect(pkg.type).toMatch(
-        new RegExp(`^PKG#${conf.depName}#${conf.version}`)
-      );
+      expect(pkg.pk).toBe('PRJ#owner/project');
+      expect(pkg.sk).toMatch(/^PKG#/);
     }
   });
 
   it('Should lookup via package name and version', async () => {
     const key = 'PKG#lodash#4.1.2';
-    const found = await svc.pkgVuln.get({
-      id: key,
-      type: key,
+    const found = await svc.model.get({
+      pk: key,
+      sk: key,
     });
     expect(found).toBeDefined();
     expect(found.name).toBe('lodash');
@@ -193,32 +188,32 @@ describe('Parser module', () => {
       name: 'project',
     });
     const newKey = 'PKG#lodash#4.1.3';
-    const newPkg = await svc.pkgVuln.get({
-      id: newKey,
-      type: newKey,
+    const newPkg = await svc.model.get({
+      pk: newKey,
+      sk: newKey,
     });
     expect(newPkg).toBeDefined();
     expect(newPkg.name).toBe('lodash');
     expect(newPkg.version).toBe('4.1.3');
 
     const oldKey = 'PKG#lodash#4.1.2';
-    const oldPkg = await svc.pkgVuln.get({
-      id: oldKey,
-      type: oldKey,
+    const oldPkg = await svc.model.get({
+      pk: oldKey,
+      sk: oldKey,
     });
     expect(oldPkg).toBeDefined();
     expect(oldPkg.name).toBe('lodash');
     expect(oldPkg.version).toBe('4.1.2');
 
-    const pkgsInPrj = await svc.prj
+    const pkgsInPrj = await svc.model
       .query()
-      .where('id')
+      .where('pk')
       .eq('PRJ#owner/project')
       .sort(SortOrder.descending)
-      .startAt({ id: 'PRJ#owner/project', type: 'PRJ#owner/project' })
+      .startAt({ pk: 'PRJ#owner/project', sk: 'PRJ#owner/project' })
       .exec();
     expect(pkgsInPrj.length).toBe(1);
-    expect(pkgsInPrj[0].type).toBe(newKey);
+    expect(pkgsInPrj[0].sk).toBe(newKey);
   });
 
   it('Should remove dependency', async () => {
@@ -240,12 +235,12 @@ describe('Parser module', () => {
       // even if its no longer related to a project
       expect(pkg).toBeDefined();
     }
-    const pkgsInPrj = await svc.prj
+    const pkgsInPrj = await svc.model
       .query()
-      .where('id')
+      .where('pk')
       .eq('PRJ#owner/project')
       .sort(SortOrder.descending)
-      .startAt({ id: 'PRJ#owner/project', type: 'PRJ#owner/project' })
+      .startAt({ pk: 'PRJ#owner/project', sk: 'PRJ#owner/project' })
       .exec();
     // Ensures no packages are associated to this project
     expect(pkgsInPrj.length).toBe(0);
@@ -289,21 +284,17 @@ describe('Parser module', () => {
   });
 
   afterAll(async () => {
-    let pkgs = await svc.pkgVuln.scan().limit(10).exec();
-    let pkgCount = 0;
-    while (pkgs.length > 0) {
-      await svc.pkgVuln.batchDelete(pkgs.map(({ id, type }) => ({ id, type })));
-      pkgCount += pkgs.length;
-      pkgs = await svc.pkgVuln.scan().limit(10).exec();
+    const scanner = () =>
+      svc.model.scan().limit(25).attributes(['sk', 'pk']).exec();
+    let items = await scanner();
+    let count = 0;
+    while (items.length > 0) {
+      count += items.length;
+      await svc.model.batchDelete(
+        items.map((item) => ({ sk: item.sk, pk: item.pk }))
+      );
+      items = await scanner();
     }
-
-    let prjs = await svc.prj.scan().limit(10).exec();
-    let prjCount = 0;
-    while (prjs.length > 0) {
-      await svc.prj.batchDelete(prjs.map(({ id, type }) => ({ id, type })));
-      prjCount += prjs.length;
-      prjs = await svc.prj.scan().limit(10).exec();
-    }
-    console.log(`Deleted ${pkgCount} packages\nDeleted ${prjCount} projects`);
+    console.log(`Deleted ${count} entries`);
   }, 5 * 60000);
 });

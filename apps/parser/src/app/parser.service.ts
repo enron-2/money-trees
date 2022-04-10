@@ -1,34 +1,23 @@
 import 'reflect-metadata';
 import { plainToClass } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
-import { InjectModel, Model, Document } from 'nestjs-dynamoose';
+import { InjectModel, Model } from 'nestjs-dynamoose';
 import { Injectable, Logger } from '@nestjs/common';
-import { SortOrder } from 'dynamoose/dist/General';
 import { chunk } from 'lodash';
-import {
-  PkgVulnDocument,
-  PkgVulnDocumentKey,
-  PrjDocument,
-  PrjDocumentKey,
-} from '@schemas/tables';
-import { PackageVuln, Project } from '@schemas/tablenames';
 import { PackageEntity, ProjectEntity } from '@schemas/entities';
-import { normalizeAttributes } from '@core/utils';
 import { PackageLock, PkgMeta } from './package-lock.dto';
+import { MainTableDoc, MainTableKey } from '@schemas/entities/entity';
+import { EntityType } from '@schemas/entities/enums';
 
 type RepoMeta = { owner: string; name: string };
-type PkgVulnModel = Model<PkgVulnDocument, PkgVulnDocumentKey, 'id' | 'type'>;
-type PrjModel = Model<PrjDocument, PrjDocumentKey, 'id' | 'type'>;
 
 @Injectable()
 export class ParserService {
   domain: string;
 
   constructor(
-    @InjectModel(PackageVuln)
-    readonly pkgVuln: PkgVulnModel,
-    @InjectModel(Project)
-    readonly prj: PrjModel
+    @InjectModel('MainTable')
+    readonly model: Model<MainTableDoc, MainTableKey>
   ) {}
 
   async createLockFile(rawFileContents: string, logger?: Logger) {
@@ -98,74 +87,83 @@ export class ParserService {
   async getPackage(
     name: string,
     version: string
-  ): Promise<undefined | Document<PkgVulnDocument>> {
+  ): Promise<undefined | PackageEntity> {
     const key = `PKG#${name}#${version}`;
     try {
-      return this.pkgVuln.get(
-        { id: key, type: key },
-        { return: 'document', attributes: normalizeAttributes(PackageEntity) }
-      );
+      const pkg = await this.model.get({ pk: key, sk: key });
+      return PackageEntity.fromDocument(pkg);
     } catch (err: unknown) {
       return;
     }
   }
 
-  async getProject(prjId: string): Promise<undefined | Document<PrjDocument>> {
+  async getProject(prjId: string): Promise<undefined | ProjectEntity> {
     try {
-      return this.prj.get(
-        { id: prjId, type: prjId },
-        { return: 'document', attributes: normalizeAttributes(ProjectEntity) }
-      );
+      const prj = await this.model.get({
+        pk: prjId,
+        sk: prjId,
+      });
+      return ProjectEntity.fromDocument(prj);
     } catch (err: unknown) {
       return;
     }
   }
 
-  createPackage(name: string, pkg: PkgMeta) {
+  async createPackage(name: string, pkg: PkgMeta) {
     const key = `PKG#${name}#${pkg.version}`;
-    return this.pkgVuln.create({
-      id: key,
-      type: key,
+    const pkgEntity = await this.model.create({
+      pk: key,
+      sk: key,
+      type: EntityType.Package,
       name,
       version: pkg.version,
       url: pkg.resolved,
       checksum: pkg.integrity,
     });
+    return PackageEntity.fromDocument(pkgEntity);
   }
 
   async createProject(name: string, url: string, pkgIds: string[]) {
-    const partitionKey = `PRJ#${name}`;
-    const project = await this.prj.create({
-      id: partitionKey,
-      type: partitionKey,
+    const key = `PRJ#${name}`;
+    const project = await this.model.create({
+      pk: key,
+      sk: key,
+      type: EntityType.Project,
       url,
       name,
     });
     await Promise.all(
       pkgIds.map((pkgId) =>
-        this.prj.create({
-          id: partitionKey,
-          type: pkgId,
+        this.model.create({
+          pk: key,
+          sk: pkgId,
         })
       )
     );
-    return project;
+    return ProjectEntity.fromDocument(project);
   }
 
   async deleteProject(prjId: string) {
-    const pkgs = await this.prj
-      .query('id')
+    const prjEntries = await this.model
+      .query('pk')
       .eq(prjId)
       .all(100)
-      .sort(SortOrder.descending)
+      .attributes(['pk', 'sk'])
       .exec();
     let deletions = await Promise.all(
-      chunk(pkgs, 25).map((packages) => this.prj.batchDelete(packages))
+      chunk(prjEntries, 25).map((entries) =>
+        this.model.batchDelete(
+          entries.map((e) => ({
+            pk: e.pk,
+            sk: e.sk,
+          }))
+        )
+      )
     );
     while (deletions.length < 0) {
       deletions = await Promise.all(
-        chunk(deletions.map((d) => d.unprocessedItems).flat(), 25).map(
-          (packages) => this.prj.batchDelete(packages)
+        chunk(deletions.map((d) => d.unprocessedItems).flat(), 25).map((e) =>
+          this.model.batchDelete(e)
         )
       );
     }
