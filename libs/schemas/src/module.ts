@@ -1,18 +1,12 @@
 import { Module } from '@nestjs/common';
 import { CustomDynamooseModule } from '@core/customDynamoose';
-import { PkgVulnSchema, PrjSchema } from './tables';
-import { PackageVuln, Project } from './tablenames';
+import { MainSchema } from './table';
 
 const customDynamooseModule = CustomDynamooseModule.forFeatureAsync([
   {
-    name: process.env.PKG_VLN_TABLE ?? PackageVuln,
-    useFactory: () => PkgVulnSchema,
-    provide: PackageVuln,
-  },
-  {
-    name: process.env.PRJ_TABLE ?? Project,
-    useFactory: () => PrjSchema,
-    provide: Project,
+    name: process.env.TABLE_NAME ?? 'MainTable',
+    useFactory: () => MainSchema,
+    provide: 'MainTable',
   },
 ]);
 
