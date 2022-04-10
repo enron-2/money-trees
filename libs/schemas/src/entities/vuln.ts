@@ -1,5 +1,5 @@
 import { IsNonEmptyString } from '@core/validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, instanceToPlain, Transform } from 'class-transformer';
 import { Equals, IsInt, IsOptional, Matches, Max, Min } from 'class-validator';
 import { BaseEntity, MainTableDoc, PlainEntity } from './entity';
@@ -19,7 +19,7 @@ export class VulnEntity extends BaseEntity {
   @IsNonEmptyString()
   @IsOptional()
   @Expose()
-  @ApiProperty()
+  @ApiPropertyOptional()
   description?: string;
 
   @Transform(({ value }) => Number(value))
