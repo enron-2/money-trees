@@ -32,6 +32,13 @@ export const MainSchema = new Schema({
   url: {
     type: String,
   },
+  worstVuln: {
+    type: Object,
+    schema: {
+      id: String,
+      severity: Number,
+    },
+  },
 
   // PKG
   version: {

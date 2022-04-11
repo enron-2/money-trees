@@ -12,6 +12,10 @@ export class MainTableDoc extends MainTableKey {
   name?: string;
   url?: string;
   version?: string;
+  worstVuln?: {
+    id: string;
+    severity: number;
+  };
   checksum?: string;
   description?: string;
   severity?: number;
