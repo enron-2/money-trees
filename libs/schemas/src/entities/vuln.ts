@@ -39,7 +39,7 @@ export class VulnEntity extends BaseEntity {
 
   @Matches(vulnKeyRegex)
   get pk(): string {
-    const severity = String.fromCodePoint(this.severity);
+    const severity = String.fromCodePoint(this.severity + 32);
     return `${KeyPrefix.Vuln}#${severity}#${this.name}`;
   }
 
