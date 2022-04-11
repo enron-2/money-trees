@@ -46,10 +46,11 @@ export class PackagesController {
     @Query()
     { limit, lastKey, ...query }: PackageSearchInputDto
   ): Promise<PackageDto[]> {
-    // TODO: add maxVulns
-    const res = await this.packagesService.findAll(limit, lastKey, query);
-    console.log(res);
-    return res.map((r) => r.toPlain());
+    const pkgs = await this.packagesService.findAll(limit, lastKey, query);
+    const withVulns = await Promise.all(
+      pkgs.map((pkg) => this.packagesService.findOneWithMaxVuln(pkg.id))
+    );
+    return withVulns;
   }
 
   @ApiOperation({ summary: 'Package with given ID' })

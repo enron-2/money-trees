@@ -34,6 +34,7 @@ export class PackagesService {
     if (lastKey)
       queryBuilder.startAt({
         type: EntityType.Package,
+        sk: lastKey,
         pk: lastKey,
       });
 
@@ -57,6 +58,28 @@ export class PackagesService {
     }
     const res = await queryBuilder.limit(limit).exec();
     return res?.map((doc) => PackageEntity.fromDocument(doc));
+  }
+
+  async findOneWithMaxVuln(id: string) {
+    const pkg = await this.model.get({ pk: id, sk: id });
+    const pkgEntity = PackageEntity.fromDocument(pkg);
+    const [maxVlnPrimaryKey] = await this.model
+      .query()
+      .sort(SortOrder.descending)
+      .where('pk')
+      .eq(id)
+      .limit(1)
+      .and()
+      .attribute('name')
+      .not()
+      .exists()
+      .exec();
+    if (!maxVlnPrimaryKey) return pkgEntity.toPlain();
+    const vln = await this.model.get({
+      pk: maxVlnPrimaryKey.sk,
+      sk: maxVlnPrimaryKey.sk,
+    });
+    return { ...pkgEntity.toPlain(), worstSeverity: vln.severity };
   }
 
   async findOne(id: string, attrs?: AttributeType<unknown>) {
