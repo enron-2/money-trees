@@ -60,8 +60,7 @@ export class PackagesController {
   @UseInterceptors(new DtoConformInterceptor(PackageDto))
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<PackageDto> {
-    const pkg = await this.packagesService.findOne(id);
-    return pkg.toPlain();
+    return this.packagesService.findOneWithMaxVuln(id);
   }
 
   @ApiOperation({
@@ -92,12 +91,6 @@ export class PackagesController {
   })
   @ApiOkResponse({
     type: [ProjectDto],
-  })
-  @ApiQuery({
-    name: 'sort',
-    enum: SortOrder,
-    description: 'Package name alphanumeric sorting',
-    required: false,
   })
   @UseInterceptors(new DtoConformInterceptor(ProjectDto))
   @Get(':id/projects')
