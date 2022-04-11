@@ -34,14 +34,7 @@ export class ProjectsController {
     @Query()
     { limit, lastKey, ...query }: ProjectSearchInputDto
   ): Promise<ProjectDto[]> {
-    // TODO: include worstSeverity
-    const prjEntities = await this.projectsService.findAll(
-      limit,
-      lastKey,
-      query
-    );
-    const prjs = prjEntities.map((p) => p.toPlain());
-    return prjs;
+    return await this.projectsService.findAll(limit, lastKey, query);
   }
 
   @ApiOperation({ summary: 'Project with given ID' })
@@ -51,9 +44,7 @@ export class ProjectsController {
   @UseInterceptors(new DtoConformInterceptor(ProjectDto))
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<ProjectDto> {
-    // TODO: include worstSeverity
-    const prjEntity = await this.projectsService.findOne(id);
-    return prjEntity.toPlain();
+    return this.projectsService.findOne(id);
   }
 
   @ApiOperation({
@@ -74,6 +65,6 @@ export class ProjectsController {
       lastKey,
       limit
     );
-    return { ...prj, packages: pkgsInPrj.map((pkg) => pkg.toPlain()) };
+    return { ...prj, packages: pkgsInPrj };
   }
 }

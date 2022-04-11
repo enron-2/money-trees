@@ -8,6 +8,7 @@ import {
   ProjectEntity,
 } from '@schemas/entities';
 import { InjectModel, Model } from 'nestjs-dynamoose';
+import { SortOrder } from 'dynamoose/dist/General';
 
 @Injectable()
 export class ProjectsService {
@@ -49,12 +50,16 @@ export class ProjectsService {
       !!query && Object.values(query)?.filter((v) => !!v).length > 0;
     if (hasQuery) {
       const res = await queryBuilder.exec();
-      return res
-        ?.slice(0, limit)
-        ?.map((doc) => ProjectEntity.fromDocument(doc));
+      return res?.slice(0, limit)?.map((doc) => ({
+        ...ProjectEntity.fromDocument(doc).toPlain(),
+        worstSeverity: doc?.worstVuln?.severity,
+      }));
     }
     const res = await queryBuilder.limit(limit).exec();
-    return res?.map((doc) => ProjectEntity.fromDocument(doc));
+    return res?.map((doc) => ({
+      ...ProjectEntity.fromDocument(doc).toPlain(),
+      worstSeverity: doc?.worstVuln?.severity,
+    }));
   }
 
   async findOne(id: string, attrs?: AttributeType<unknown>) {
@@ -71,19 +76,38 @@ export class ProjectsService {
         )
       : await this.model.get({ pk: id, sk: id });
     if (!prj) throw new NotFoundException();
-    return ProjectEntity.fromDocument(prj);
+    return {
+      ...ProjectEntity.fromDocument(prj).toPlain(),
+      worstSeverity: prj?.worstVuln?.severity,
+    };
   }
 
   async findRelatedPackages(id: string, lastKey?: string, limit = 10) {
     const queryBuilder = this.model.query().where('pk').eq(id).limit(limit);
     if (lastKey) queryBuilder.startAt({ pk: id, sk: lastKey });
     const res = await queryBuilder.exec();
-    const pkgs = await this.model.batchGet(
-      res.map((r) => ({
-        pk: r.sk,
-        sk: r.sk,
-      }))
-    );
-    return pkgs.map((pkg) => PackageEntity.fromDocument(pkg));
+    const withMaxVuln = async (id: string) => {
+      const pkg = await this.model.get({ pk: id, sk: id });
+      const pkgEntity = PackageEntity.fromDocument(pkg);
+      const [maxVlnPrimaryKey] = await this.model
+        .query()
+        .sort(SortOrder.descending)
+        .where('pk')
+        .eq(id)
+        .limit(1)
+        .and()
+        .attribute('name')
+        .not()
+        .exists()
+        .exec();
+      if (!maxVlnPrimaryKey) return pkgEntity.toPlain();
+      const vln = await this.model.get({
+        pk: maxVlnPrimaryKey.sk,
+        sk: maxVlnPrimaryKey.sk,
+      });
+      return { ...pkgEntity.toPlain(), worstSeverity: vln.severity };
+    };
+    const final = await Promise.all(res.map((pkg) => withMaxVuln(pkg.sk)));
+    return final;
   }
 }
