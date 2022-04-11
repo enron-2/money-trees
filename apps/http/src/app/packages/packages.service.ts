@@ -1,28 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import {
-  PrjDocument,
-  PrjDocumentKey,
-  PkgVulnDocument,
-  PkgVulnDocumentKey,
-} from '@schemas/tables';
 import { AttributeType, normalizeAttributes } from '@core/utils';
-import * as tablenames from '@schemas/tablenames';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import { PackageDetailDto, PackageDto, ProjectDto, VulnDto } from '../dto';
+import { PackageDetailDto, VulnDto } from '../dto';
 import { SortOrder } from 'dynamoose/dist/General';
-import { VulnEntity } from '@schemas/entities';
+import {
+  EntityType,
+  MainTableDoc,
+  MainTableKey,
+  PackageEntity,
+  ProjectEntity,
+} from '@schemas/entities';
 import { plainToInstance } from 'class-transformer';
-
-type PkgVulnModel = Model<PkgVulnDocument, PkgVulnDocumentKey, 'id' | 'type'>;
-type PrjModel = Model<PrjDocument, PrjDocumentKey, 'id' | 'type'>;
 
 @Injectable()
 export class PackagesService {
   constructor(
-    @InjectModel(tablenames.PackageVuln)
-    private readonly pkgVuln: PkgVulnModel,
-    @InjectModel(tablenames.Project)
-    private readonly prj: PrjModel
+    @InjectModel('MainTable')
+    private readonly model: Model<MainTableDoc, MainTableKey>
   ) {}
 
   async findAll(
@@ -31,65 +25,75 @@ export class PackagesService {
     query?: Record<string, any>,
     attrs?: AttributeType<unknown>
   ) {
-    const scanner = this.pkgVuln.scan();
-    scanner.where('id').beginsWith('PKG#');
-    scanner.and().where('type').beginsWith('PKG#');
-    if (lastKey) {
-      scanner.startAt({ id: lastKey, type: lastKey });
-    }
+    const queryBuilder = this.model
+      .query()
+      .using('TypeGSI')
+      .where('type')
+      .eq(EntityType.Package);
 
-    scanner.attributes(
-      attrs ? normalizeAttributes(attrs) : normalizeAttributes(PackageDto)
-    );
+    if (lastKey)
+      queryBuilder.startAt({
+        type: EntityType.Package,
+        pk: lastKey,
+      });
+
+    if (attrs) {
+      queryBuilder.attributes(normalizeAttributes(attrs));
+    }
 
     for (const [k, v] of Object.entries(query)) {
       if (!v) continue;
-      if (typeof v === 'string') scanner.and().where(k).contains(v);
-      else scanner.and().where(k).eq(v);
+      if (typeof v === 'string') queryBuilder.and().where(k).contains(v);
+      else queryBuilder.and().where(k).eq(v);
     }
 
-    if (Object.values(query).filter((v) => !!v).length > 0) {
-      const res = await scanner.exec();
-      return res.slice(0, limit) as PackageDto[];
-    } else {
-      return scanner.limit(limit).exec() as Promise<PackageDto[]>;
+    const hasQuery =
+      !!query && Object.values(query)?.filter((v) => !!v).length > 0;
+    if (hasQuery) {
+      const res = await queryBuilder.exec();
+      return res
+        ?.slice(0, limit)
+        ?.map((doc) => PackageEntity.fromDocument(doc));
     }
+    const res = await queryBuilder.limit(limit).exec();
+    return res?.map((doc) => PackageEntity.fromDocument(doc));
   }
 
   async findOne(id: string, attrs?: AttributeType<unknown>) {
-    return this.pkgVuln.get(
-      {
-        id,
-        type: id,
-      },
-      {
-        return: 'document',
-        attributes: attrs
-          ? normalizeAttributes(attrs)
-          : normalizeAttributes(PackageDto),
-      }
-    ) as Promise<PackageDto>;
+    const pkg = attrs
+      ? await this.model.get(
+          { pk: id, sk: id },
+          {
+            return: 'document',
+            attributes: normalizeAttributes(attrs),
+          }
+        )
+      : await this.model.get({ pk: id, sk: id });
+    if (!pkg) throw new NotFoundException();
+    return PackageEntity.fromDocument(pkg);
   }
 
-  async findOneWithVulns(
+  async findRelatedVulns(
     id: string,
     lastKey?: string,
     sort?: SortOrder,
     limit = 10
   ) {
-    const pkg = await this.pkgVuln.get({ id, type: id });
+    const pkg = await this.findOne(id);
     if (!pkg) throw new NotFoundException();
-    const queryBuilder = this.pkgVuln
+    const queryBuilder = this.model
       .query()
-      .where('severity')
-      .exists()
-      .and()
-      .where('id')
+      .where('pk')
       .eq(id)
-      .attributes(normalizeAttributes(VulnEntity));
+      .and()
+      .where('name')
+      .not()
+      .exists();
+
     if (lastKey) {
-      queryBuilder.startAt({ id, type: lastKey });
+      queryBuilder.startAt({ pk: id, sk: lastKey });
     }
+
     if (sort) {
       queryBuilder.sort(sort);
     }
@@ -101,36 +105,50 @@ export class PackagesService {
       queryBuilder.limit(limit);
     }
 
-    const vulns = await queryBuilder.exec();
+    const vulnIds = await queryBuilder.exec();
+    const vulns =
+      vulnIds.length > 0
+        ? await this.model.batchGet(
+            vulnIds.map((vln) => ({
+              pk: vln.sk,
+              sk: vln.sk,
+            }))
+          )
+        : undefined;
+
     const pkgEntity = plainToInstance(PackageDetailDto, pkg);
-    pkgEntity.vulns = plainToInstance(VulnDto, vulns);
+    pkgEntity.vulns = vulns ? plainToInstance(VulnDto, vulns) : undefined;
     return pkgEntity;
   }
 
   async findProjectConsumingPackage(
     packageId: string,
     lastKey?: string,
-    sort?: SortOrder,
     limit = 10
   ) {
-    const pkgExists = await this.findOne(packageId, ['id']);
+    const pkgExists = await this.findOne(packageId);
     if (!pkgExists) throw new NotFoundException();
-    const prjQuery = this.prj
+
+    const prjQuery = this.model
       .query()
-      .using('PkgGSI')
-      .where('type')
+      .using('InverseGSI')
+      .where('sk')
       .eq(packageId)
-      .attributes(['id'])
       .limit(limit);
-    if (lastKey) prjQuery.startAt({ type: packageId, id: lastKey });
-    if (sort) prjQuery.sort(sort);
-    const prjIds = await prjQuery.exec();
-    const resolvedProjects = await this.prj.batchGet(
-      prjIds.map((prj) => ({
-        id: prj.id,
-        type: prj.id,
+
+    if (lastKey) {
+      prjQuery.startAt({ sk: packageId, pk: lastKey });
+    } else {
+      prjQuery.startAt({ sk: packageId, pk: packageId });
+    }
+
+    const prjs = await prjQuery.exec();
+    const resolvedProjects = await this.model.batchGet(
+      prjs.map((prj) => ({
+        pk: prj.pk,
+        sk: prj.pk,
       }))
     );
-    return plainToInstance(ProjectDto, resolvedProjects);
+    return resolvedProjects.map((doc) => ProjectEntity.fromDocument(doc));
   }
 }

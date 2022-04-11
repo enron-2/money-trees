@@ -1,26 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel, Model } from 'nestjs-dynamoose';
-import * as tablenames from '@schemas/tablenames';
-import {
-  PkgVulnDocument,
-  PkgVulnDocumentKey,
-  PrjDocument,
-  PrjDocumentKey,
-} from '@schemas/tables';
 import { AttributeType, normalizeAttributes } from '@core/utils';
-import { PackageDto, ProjectDetailDto, ProjectDto } from '../dto';
-import { plainToInstance } from 'class-transformer';
-
-type PkgVulnModel = Model<PkgVulnDocument, PkgVulnDocumentKey, 'id' | 'type'>;
-type PrjModel = Model<PrjDocument, PrjDocumentKey, 'id' | 'type'>;
+import {
+  EntityType,
+  MainTableDoc,
+  MainTableKey,
+  PackageEntity,
+  ProjectEntity,
+} from '@schemas/entities';
+import { InjectModel, Model } from 'nestjs-dynamoose';
 
 @Injectable()
 export class ProjectsService {
   constructor(
-    @InjectModel(tablenames.PackageVuln)
-    private readonly pkgVuln: PkgVulnModel,
-    @InjectModel(tablenames.Project)
-    private readonly prj: PrjModel
+    @InjectModel('MainTable')
+    private readonly model: Model<MainTableDoc, MainTableKey>
   ) {}
 
   async findAll(
@@ -29,52 +22,68 @@ export class ProjectsService {
     query?: Record<string, any>,
     attrs?: AttributeType<unknown>
   ) {
-    const scanner = this.prj.scan();
-    scanner.where('type').beginsWith('PRJ#');
+    const queryBuilder = this.model
+      .query()
+      .using('TypeGSI')
+      .where('type')
+      .eq(EntityType.Project);
+
     if (lastKey) {
-      scanner.startAt({ id: lastKey, type: lastKey });
+      queryBuilder.startAt({
+        type: EntityType.Project,
+        pk: lastKey,
+      });
     }
 
-    scanner.attributes(
-      attrs ? normalizeAttributes(attrs) : normalizeAttributes(ProjectDto)
-    );
+    if (attrs) {
+      queryBuilder.attributes(normalizeAttributes(attrs));
+    }
 
     for (const [k, v] of Object.entries(query)) {
       if (!v) continue;
-      if (typeof v === 'string') scanner.and().where(k).contains(v);
-      else scanner.and().where(k).eq(v);
+      if (typeof v === 'string') queryBuilder.and().where(k).contains(v);
+      else queryBuilder.and().where(k).eq(v);
     }
 
-    const res = await scanner.exec();
-    return res.slice(0, limit) as ProjectDto[];
+    const hasQuery =
+      !!query && Object.values(query)?.filter((v) => !!v).length > 0;
+    if (hasQuery) {
+      const res = await queryBuilder.exec();
+      return res
+        ?.slice(0, limit)
+        ?.map((doc) => ProjectEntity.fromDocument(doc));
+    }
+    const res = await queryBuilder.limit(limit).exec();
+    return res?.map((doc) => ProjectEntity.fromDocument(doc));
   }
 
   async findOne(id: string, attrs?: AttributeType<unknown>) {
-    const prj = await this.prj.get(
-      { id, type: id },
-      {
-        return: 'document',
-        attributes: normalizeAttributes(attrs ?? ProjectDto),
-      }
-    );
+    const prj = attrs
+      ? await this.model.get(
+          {
+            pk: id,
+            sk: id,
+          },
+          {
+            return: 'document',
+            attributes: normalizeAttributes(attrs),
+          }
+        )
+      : await this.model.get({ pk: id, sk: id });
     if (!prj) throw new NotFoundException();
-    return prj;
+    return ProjectEntity.fromDocument(prj);
   }
 
-  async findOneWithPackages(id: string, lastKey?: string, limit = 10) {
-    const prj = await this.findOne(id);
-    const queryBuilder = this.prj.query().where('id').eq(prj.id).limit(limit);
-    if (lastKey) queryBuilder.startAt({ id, type: lastKey });
-
-    const pkgInPrjIds = await queryBuilder.exec();
-    const resolvedPkgs = await this.pkgVuln.batchGet(
-      pkgInPrjIds.map((pkg) => ({
-        id: pkg.type,
-        type: pkg.type,
+  async findRelatedPackages(id: string, lastKey?: string, limit = 10) {
+    const queryBuilder = this.model.query().where('pk').eq(id).limit(limit);
+    if (lastKey) queryBuilder.startAt({ pk: id, sk: lastKey });
+    const res = await queryBuilder.exec();
+    const pkgs = await this.model.batchGet(
+      res.map((r) => ({
+        pk: r.sk,
+        sk: r.sk,
       }))
     );
-    const finalPrj = plainToInstance(ProjectDetailDto, prj);
-    finalPrj.packages = plainToInstance(PackageDto, resolvedPkgs);
-    return finalPrj;
+    return pkgs.map((pkg) => PackageEntity.fromDocument(pkg));
   }
 }

@@ -7,13 +7,12 @@ import {
   OmitType,
   PartialType,
 } from '@nestjs/swagger';
-import { plainToInstance } from 'class-transformer';
 import { PaginationDto, ProjectDetailDto, ProjectDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { ProjectsService } from './projects.service';
 
 class ProjectSearchInputDto extends PartialType(
-  IntersectionType(OmitType(ProjectDto, ['id']), PaginationDto)
+  IntersectionType(OmitType(ProjectDto, ['id', 'worstSeverity']), PaginationDto)
 ) {}
 
 @ApiTags('Projects')
@@ -31,11 +30,18 @@ export class ProjectsController {
   })
   @UseInterceptors(new DtoConformInterceptor(ProjectDto))
   @Get()
-  findAll(
+  async findAll(
     @Query()
     { limit, lastKey, ...query }: ProjectSearchInputDto
   ): Promise<ProjectDto[]> {
-    return this.projectsService.findAll(limit, lastKey, query);
+    // TODO: include worstSeverity
+    const prjEntities = await this.projectsService.findAll(
+      limit,
+      lastKey,
+      query
+    );
+    const prjs = prjEntities.map((p) => p.toPlain());
+    return prjs;
   }
 
   @ApiOperation({ summary: 'Project with given ID' })
@@ -45,8 +51,9 @@ export class ProjectsController {
   @UseInterceptors(new DtoConformInterceptor(ProjectDto))
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<ProjectDto> {
-    const prj = await this.projectsService.findOne(id);
-    return plainToInstance(ProjectDto, prj);
+    // TODO: include worstSeverity
+    const prjEntity = await this.projectsService.findOne(id);
+    return prjEntity.toPlain();
   }
 
   @ApiOperation({
@@ -61,6 +68,12 @@ export class ProjectsController {
     @Param('id') id: string,
     @Query() { lastKey, limit }: PaginationDto
   ): Promise<ProjectDetailDto> {
-    return this.projectsService.findOneWithPackages(id, lastKey, limit);
+    const prj = await this.findOne(id);
+    const pkgsInPrj = await this.projectsService.findRelatedPackages(
+      id,
+      lastKey,
+      limit
+    );
+    return { ...prj, packages: pkgsInPrj.map((pkg) => pkg.toPlain()) };
   }
 }

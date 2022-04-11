@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  NotFoundException,
-  Param,
-  Query,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
 import {
   ApiOkResponse,
   ApiOperation,
@@ -28,7 +21,10 @@ import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { PackagesService } from './packages.service';
 
 class PackageSearchInputDto extends PartialType(
-  IntersectionType(OmitType(PackageEntity, ['type', 'id']), PaginationDto)
+  IntersectionType(
+    OmitType(PackageEntity, ['pk', 'sk', 'type', 'keys', 'toPlain']),
+    PaginationDto
+  )
 ) {}
 
 @ApiTags('Packages')
@@ -46,11 +42,14 @@ export class PackagesController {
   })
   @UseInterceptors(new DtoConformInterceptor(PackageDto))
   @Get()
-  findAll(
+  async findAll(
     @Query()
     { limit, lastKey, ...query }: PackageSearchInputDto
   ): Promise<PackageDto[]> {
-    return this.packagesService.findAll(limit, lastKey, query);
+    // TODO: add maxVulns
+    const res = await this.packagesService.findAll(limit, lastKey, query);
+    console.log(res);
+    return res.map((r) => r.toPlain());
   }
 
   @ApiOperation({ summary: 'Package with given ID' })
@@ -61,8 +60,7 @@ export class PackagesController {
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<PackageDto> {
     const pkg = await this.packagesService.findOne(id);
-    if (!pkg) throw new NotFoundException();
-    return pkg;
+    return pkg.toPlain();
   }
 
   @ApiOperation({
@@ -85,7 +83,7 @@ export class PackagesController {
     @Query('sort', new EnumValidationPipe(SortOrder, { optional: true }))
     sort?: SortOrder
   ): Promise<PackageDetailDto> {
-    return this.packagesService.findOneWithVulns(id, lastKey, sort, limit);
+    return this.packagesService.findRelatedVulns(id, lastKey, sort, limit);
   }
 
   @ApiOperation({
@@ -104,15 +102,13 @@ export class PackagesController {
   @Get(':id/projects')
   async projectsUsingPackage(
     @Param('id') id: string,
-    @Query() { lastKey, limit }: PaginationDto,
-    @Query('sort', new EnumValidationPipe(SortOrder, { optional: true }))
-    sort?: SortOrder
+    @Query() { lastKey, limit }: PaginationDto
   ) {
-    return this.packagesService.findProjectConsumingPackage(
+    const res = await this.packagesService.findProjectConsumingPackage(
       id,
       lastKey,
-      sort,
       limit
     );
+    return res.map((r) => r.toPlain());
   }
 }

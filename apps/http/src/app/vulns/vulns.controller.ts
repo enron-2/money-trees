@@ -13,69 +13,77 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiPropertyOptional,
   ApiTags,
+  IntersectionType,
+  OmitType,
+  PartialType,
 } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsInt, IsOptional, IsPositive } from 'class-validator';
 import { PackageDetailDto, PackageDto, PaginationDto, VulnDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { CreateVulnInput, UpdateVulnInput } from './vulns.dto';
 import { VulnsService } from './vulns.service';
 
-// class VulnSearchInputDto extends PartialType(
-//   IntersectionType(OmitType(VulnDto, ['id', 'severity']), PaginationDto)
-// ) {
-//   @ApiPropertyOptional({ minimum: 1 })
-//   @IsOptional()
-//   @Transform((param) => +param.value)
-//   @IsInt()
-//   @IsPositive()
-//   severity?: number;
-// }
+class VulnSearchInputDto extends PartialType(
+  IntersectionType(OmitType(VulnDto, ['id', 'severity']), PaginationDto)
+) {
+  @ApiPropertyOptional({ minimum: 1 })
+  @IsOptional()
+  @Transform((param) => +param.value)
+  @IsInt()
+  @IsPositive()
+  severity?: number;
+}
 
 @ApiTags('Vulnerabilities')
 @Controller('vulns')
 export class VulnsController {
   constructor(private readonly vulnsService: VulnsService) {}
 
-  // @ApiOperation({
-  //   summary: 'All vulnerabilities',
-  //   description:
-  //     'Query for vulnerabilities uses the AND operator and you can paginate by supplying at least the lastKey param',
-  // })
-  // @ApiOkResponse({ type: [VulnDto] })
-  // @UseInterceptors(new DtoConformInterceptor(VulnDto))
-  // @Get()
-  // findAll(
-  //   @Query() { limit, lastKey, ...query }: VulnSearchInputDto
-  // ): Promise<VulnDto[]> {
-  //   throw new NotImplementedException();
-  // }
+  @ApiOperation({
+    summary: 'All vulnerabilities',
+    description:
+      'Query for vulnerabilities uses the AND operator and you can paginate by supplying at least the lastKey param',
+  })
+  @ApiOkResponse({ type: [VulnDto] })
+  @UseInterceptors(new DtoConformInterceptor(VulnDto))
+  @Get()
+  async findAll(
+    @Query() { limit, lastKey, ...query }: VulnSearchInputDto
+  ): Promise<VulnDto[]> {
+    const entities = await this.vulnsService.findAll(limit, lastKey, query);
+    return entities.map((e) => e.toPlain());
+  }
 
   @ApiOperation({ summary: 'Vulnerability with given ID' })
   @ApiOkResponse({ type: VulnDto })
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<VulnDto> {
-    return this.vulnsService.findOne(id);
+    return this.vulnsService.findOne(id).then((v) => v.toPlain());
   }
 
   @ApiOperation({ summary: 'Report new vulnerability' })
   @ApiCreatedResponse({ type: VulnDto })
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Post()
-  reportVuln(@Body() input: CreateVulnInput): Promise<VulnDto> {
-    return this.vulnsService.create(input);
+  async reportVuln(@Body() input: CreateVulnInput): Promise<VulnDto> {
+    const vln = await this.vulnsService.create(input);
+    return vln.toPlain();
   }
 
-  @ApiOperation({ summary: 'Update vulnerability with given ID' })
-  @ApiOkResponse({ type: VulnDto })
-  @UseInterceptors(new DtoConformInterceptor(VulnDto))
-  @Put(':id')
-  updateVuln(
-    @Param('id') id: string,
-    @Body() input: UpdateVulnInput
-  ): Promise<VulnDto> {
-    return this.vulnsService.update(id, input);
-  }
+  // @ApiOperation({ summary: 'Update vulnerability with given ID' })
+  // @ApiOkResponse({ type: VulnDto })
+  // @UseInterceptors(new DtoConformInterceptor(VulnDto))
+  // @Put(':id')
+  // updateVuln(
+  //   @Param('id') id: string,
+  //   @Body() input: UpdateVulnInput
+  // ): Promise<VulnDto> {
+  //   return this.vulnsService.update(id, input);
+  // }
 
   @ApiOperation({
     summary: 'Delete vulnerability with given ID',
@@ -84,8 +92,9 @@ export class VulnsController {
   @ApiOkResponse({ type: VulnDto })
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Delete(':id')
-  deleteVuln(@Param('id') id: string): Promise<VulnDto> {
-    return this.vulnsService.delete(id);
+  async deleteVuln(@Param('id') id: string): Promise<VulnDto> {
+    const vln = await this.vulnsService.delete(id);
+    return vln.toPlain();
   }
 
   @ApiOperation({
