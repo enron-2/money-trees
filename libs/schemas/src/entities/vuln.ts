@@ -1,4 +1,5 @@
 import { IsNonEmptyString } from '@core/validator';
+import { ClassTransformOptions } from '@nestjs/common/interfaces/external/class-transform-options.interface';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, instanceToPlain, Transform } from 'class-transformer';
 import { Equals, IsInt, IsOptional, Matches, Max, Min } from 'class-validator';
@@ -51,9 +52,10 @@ export class VulnEntity extends BaseEntity {
   @Expose({ toClassOnly: true })
   ulid: string;
 
-  public toPlain() {
+  public toPlain(options: ClassTransformOptions = {}) {
     return instanceToPlain(this, {
       excludeExtraneousValues: true,
+      ...options,
     }) as PlainEntity<VulnEntity>;
   }
 
