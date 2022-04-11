@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { OmitType } from '@nestjs/swagger';
 import { PackageEntity, ProjectEntity, VulnEntity } from '@schemas/entities';
 import { Expose, Transform, Type } from 'class-transformer';
@@ -21,24 +21,12 @@ export class PaginationDto {
   lastKey?: string;
 }
 
-export class WorstSeverityDto {
-  @Expose()
-  @ApiProperty()
-  id: string;
-
-  @Expose()
-  @Transform((param) => Number(param.value))
-  @ApiProperty()
-  severity: number;
-}
-
 export class VulnDto extends OmitType(VulnEntity, [...omitOptions, 'ulid']) {}
 
 export class PackageDto extends OmitType(PackageEntity, omitOptions) {
   @Expose()
-  @ApiProperty({ type: WorstSeverityDto })
-  @Type(() => WorstSeverityDto)
-  worstSeverity?: WorstSeverityDto;
+  @ApiPropertyOptional()
+  worstSeverity?: number;
 }
 
 export class PackageDetailDto extends PackageDto {
@@ -50,9 +38,8 @@ export class PackageDetailDto extends PackageDto {
 
 export class ProjectDto extends OmitType(ProjectEntity, omitOptions) {
   @Expose()
-  @ApiPropertyOptional({ type: WorstSeverityDto })
-  @Type(() => WorstSeverityDto)
-  worstSeverity?: WorstSeverityDto;
+  @ApiPropertyOptional()
+  worstSeverity?: number;
 }
 
 export class ProjectDetailDto extends ProjectDto {
