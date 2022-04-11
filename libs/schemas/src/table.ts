@@ -55,4 +55,7 @@ export const MainSchema = new Schema({
   severity: {
     type: Number,
   },
+  ulid: {
+    type: String,
+  },
 });

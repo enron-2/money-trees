@@ -40,13 +40,16 @@ export class VulnEntity extends BaseEntity {
   @Matches(vulnKeyRegex)
   get pk(): string {
     const severity = String.fromCodePoint(this.severity + 32);
-    return `${KeyPrefix.Vuln}#${severity}#${this.name}`;
+    return `${KeyPrefix.Vuln}#${severity}#${this.ulid}`;
   }
 
   @Matches(vulnKeyRegex)
   get sk(): string {
     return this.pk;
   }
+
+  @Expose({ toClassOnly: true })
+  ulid: string;
 
   public toPlain() {
     return instanceToPlain(this, {
@@ -55,6 +58,8 @@ export class VulnEntity extends BaseEntity {
   }
 
   static fromDocument(plain: Partial<MainTableDoc>) {
+    delete plain.pk;
+    delete plain.sk;
     return BaseEntity._fromDocument(plain, VulnEntity);
   }
 }

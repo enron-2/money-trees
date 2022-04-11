@@ -32,7 +32,7 @@ export class WorstSeverityDto {
   severity: number;
 }
 
-export class VulnDto extends OmitType(VulnEntity, omitOptions) {}
+export class VulnDto extends OmitType(VulnEntity, [...omitOptions, 'ulid']) {}
 
 export class PackageDto extends OmitType(PackageEntity, omitOptions) {
   @Expose()

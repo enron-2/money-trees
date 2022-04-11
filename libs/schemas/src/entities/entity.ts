@@ -19,6 +19,7 @@ export class MainTableDoc extends MainTableKey {
   checksum?: string;
   description?: string;
   severity?: number;
+  ulid?: string;
 }
 
 export abstract class BaseEntity {
