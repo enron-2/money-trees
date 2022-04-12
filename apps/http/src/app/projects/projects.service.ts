@@ -33,6 +33,7 @@ export class ProjectsService {
       queryBuilder.startAt({
         type: EntityType.Project,
         pk: lastKey,
+        sk: lastKey,
       });
     }
 
