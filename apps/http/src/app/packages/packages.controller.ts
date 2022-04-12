@@ -9,7 +9,7 @@ import {
   PartialType,
 } from '@nestjs/swagger';
 import { PackageEntity } from '@schemas/entities';
-import { EnumValidationPipe } from '@core/pipes';
+import { EnumValidationPipe, IdExistsPipe } from '@core/pipes';
 import { SortOrder } from 'dynamoose/dist/General';
 import {
   PackageDetailDto,
@@ -59,7 +59,7 @@ export class PackagesController {
   })
   @UseInterceptors(new DtoConformInterceptor(PackageDto))
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<PackageDto> {
+  async findOne(@Param('id', IdExistsPipe) id: string): Promise<PackageDto> {
     return this.packagesService.findOneWithMaxVuln(id);
   }
 
@@ -78,7 +78,7 @@ export class PackagesController {
   @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
   @Get(':id/vulns')
   async vulnsInPackage(
-    @Param('id') id: string,
+    @Param('id', IdExistsPipe) id: string,
     @Query() { lastKey, limit }: PaginationDto,
     @Query('sort', new EnumValidationPipe(SortOrder, { optional: true }))
     sort?: SortOrder
@@ -95,7 +95,7 @@ export class PackagesController {
   @UseInterceptors(new DtoConformInterceptor(ProjectDto))
   @Get(':id/projects')
   async projectsUsingPackage(
-    @Param('id') id: string,
+    @Param('id', IdExistsPipe) id: string,
     @Query() { lastKey, limit }: PaginationDto
   ) {
     const res = await this.packagesService.findProjectConsumingPackage(

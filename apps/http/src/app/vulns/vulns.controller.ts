@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsInt, IsOptional, IsPositive } from 'class-validator';
+import { IdExistsPipe } from '@core/pipes';
 import { PackageDetailDto, PackageDto, PaginationDto, VulnDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { CreateVulnInput, UpdateVulnInput } from './vulns.dto';
@@ -61,7 +62,7 @@ export class VulnsController {
   @ApiOkResponse({ type: VulnDto })
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<VulnDto> {
+  async findOne(@Param('id', IdExistsPipe) id: string): Promise<VulnDto> {
     return this.vulnsService.findOne(id).then((v) => v.toPlain());
   }
 
@@ -79,7 +80,7 @@ export class VulnsController {
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Put(':id')
   updateVuln(
-    @Param('id') id: string,
+    @Param('id', IdExistsPipe) id: string,
     @Body()
     input: UpdateVulnInput
   ) {
@@ -93,7 +94,7 @@ export class VulnsController {
   @ApiOkResponse({ type: VulnDto })
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Delete(':id')
-  async deleteVuln(@Param('id') id: string): Promise<VulnDto> {
+  async deleteVuln(@Param('id', IdExistsPipe) id: string): Promise<VulnDto> {
     const vln = await this.vulnsService.delete(id);
     return vln.toPlain();
   }
@@ -105,30 +106,30 @@ export class VulnsController {
   @UseInterceptors(new DtoConformInterceptor(PackageDto))
   @Get(':vulnId/packages')
   packagesAffectedByVuln(
-    @Param('vulnId') vulnId: string,
+    @Param('vulnId', IdExistsPipe) vulnId: string,
     @Query() { limit, lastKey }: PaginationDto
   ): Promise<PackageDto[]> {
     return this.vulnsService.packagesAffected(vulnId, limit, lastKey);
   }
 
   @ApiOperation({ summary: 'Link 1 package to 1 vulnerability' })
-  // @ApiOkResponse({ type: PackageDetailDto })
+  @ApiOkResponse({ description: 'Link successful' })
   @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
   @Put(':vulnId/packages/:packageId')
   async addVulnToPackage(
-    @Param('packageId') packageId: string,
-    @Param('vulnId') vulnId: string
+    @Param('packageId', IdExistsPipe) packageId: string,
+    @Param('vulnId', IdExistsPipe) vulnId: string
   ) {
     await this.vulnsService.linkToPkg(packageId, vulnId);
   }
 
   @ApiOperation({ summary: 'Unlink 1 package to 1 vulnerability' })
-  // @ApiOkResponse({ type: PackageDetailDto })
+  @ApiOkResponse({ description: 'Unlink successful' })
   @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
   @Delete(':vulnId/packages/:packageId')
   async removeVulnFromPackage(
-    @Param('packageId') packageId: string,
-    @Param('vulnId') vulnId: string
+    @Param('packageId', IdExistsPipe) packageId: string,
+    @Param('vulnId', IdExistsPipe) vulnId: string
   ) {
     await this.vulnsService.unlinkFromPkg(packageId, vulnId);
   }

@@ -1,3 +1,4 @@
+import { IdExistsPipe } from '@core/pipes';
 import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
 import {
   ApiOkResponse,
@@ -43,7 +44,7 @@ export class ProjectsController {
   })
   @UseInterceptors(new DtoConformInterceptor(ProjectDto))
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<ProjectDto> {
+  async findOne(@Param('id', IdExistsPipe) id: string): Promise<ProjectDto> {
     return this.projectsService.findOne(id);
   }
 
@@ -56,7 +57,7 @@ export class ProjectsController {
   @UseInterceptors(new DtoConformInterceptor(ProjectDetailDto))
   @Get(':id/packages')
   async packagesInProject(
-    @Param('id') id: string,
+    @Param('id', IdExistsPipe) id: string,
     @Query() { lastKey, limit }: PaginationDto
   ): Promise<ProjectDetailDto> {
     const prj = await this.findOne(id);
