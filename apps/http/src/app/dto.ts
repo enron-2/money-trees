@@ -6,10 +6,12 @@ import { IsInt, IsOptional, Matches, Max, Min } from 'class-validator';
 
 const omitOptions = ['sk', 'pk', 'type', 'keys', 'toPlain'] as const;
 
+const DEFAULT_PAGE_SIZE = 10;
+
 export class PaginationDto {
-  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 10 })
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: DEFAULT_PAGE_SIZE })
   @IsOptional()
-  @Transform((param) => Number(param.value))
+  @Transform((param) => (param.value ? Number(param.value) : DEFAULT_PAGE_SIZE))
   @IsInt()
   @Min(1)
   @Max(100)
