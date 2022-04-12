@@ -13,11 +13,13 @@ export class PaginationDto {
   @IsInt()
   @Min(1)
   @Max(100)
+  @Expose()
   limit?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
   @Matches(/^PKG#|^PRJ#|^VLN#/)
+  @Expose()
   lastKey?: string;
 }
 
