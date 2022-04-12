@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { AttributeType, normalizeAttributes } from '@core/utils';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import { PackageDetailDto, VulnDto } from '../dto';
+import { PackageDetailDto } from '../dto';
 import { SortOrder } from 'dynamoose/dist/General';
 import {
   EntityType,
@@ -9,6 +9,7 @@ import {
   MainTableKey,
   PackageEntity,
   ProjectEntity,
+  VulnEntity,
 } from '@schemas/entities';
 import { plainToInstance } from 'class-transformer';
 
@@ -140,7 +141,10 @@ export class PackagesService {
         : undefined;
 
     const pkgEntity = plainToInstance(PackageDetailDto, pkg);
-    pkgEntity.vulns = vulns ? plainToInstance(VulnDto, vulns) : undefined;
+    pkgEntity.vulns =
+      vulns && vulns.length > 0
+        ? vulns.map((vln) => VulnEntity.fromDocument(vln).toPlain())
+        : undefined;
     return pkgEntity;
   }
 
