@@ -74,16 +74,17 @@ export class VulnsController {
     return vln.toPlain();
   }
 
-  // @ApiOperation({ summary: 'Update vulnerability with given ID' })
-  // @ApiOkResponse({ type: VulnDto })
-  // @UseInterceptors(new DtoConformInterceptor(VulnDto))
-  // @Put(':id')
-  // updateVuln(
-  //   @Param('id') id: string,
-  //   @Body() input: UpdateVulnInput
-  // ): Promise<VulnDto> {
-  //   return this.vulnsService.update(id, input);
-  // }
+  @ApiOperation({ summary: 'Update vulnerability with given ID' })
+  @ApiOkResponse({ type: VulnDto })
+  @UseInterceptors(new DtoConformInterceptor(VulnDto))
+  @Put(':id')
+  updateVuln(
+    @Param('id') id: string,
+    @Body()
+    input: UpdateVulnInput
+  ) {
+    return this.vulnsService.update(id, input);
+  }
 
   @ApiOperation({
     summary: 'Delete vulnerability with given ID',

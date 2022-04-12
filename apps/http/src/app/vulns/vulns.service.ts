@@ -2,7 +2,6 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  NotImplementedException,
 } from '@nestjs/common';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { CreateVulnInput, UpdateVulnInput } from './vulns.dto';
@@ -16,6 +15,7 @@ import {
 import { plainToInstance } from 'class-transformer';
 import { PackageDto } from '../dto';
 import { SortOrder } from 'dynamoose/dist/General';
+import { ulid } from 'ulid';
 
 @Injectable()
 export class VulnsService {
@@ -115,12 +115,14 @@ export class VulnsService {
 
     let vulnEntity = VulnEntity.fromDocument({
       ...vulnCreate,
+      ulid: ulid(),
       type: EntityType.Vuln,
     });
 
     const vuln = await this.model.create({
       ...vulnEntity.keys(),
       ...vulnCreate,
+      ulid: vulnEntity.ulid,
       type: EntityType.Vuln,
     });
 
@@ -195,7 +197,31 @@ export class VulnsService {
    * Does not change package association
    */
   async update(id: string, input: UpdateVulnInput) {
-    throw new NotImplementedException();
+    const vuln = await this.model.get({ pk: id, sk: id });
+    if (!input.severity) {
+      const { pk, sk, ...rest } = vuln;
+      return this.model
+        .update({ pk, sk }, { ...rest, ...input })
+        .then((vln) => VulnEntity.fromDocument(vln));
+    }
+    const updatedEntity = VulnEntity.fromDocument({ ...vuln, ...input });
+    const pkgsAffected = await this.model
+      .query()
+      .using('InverseGSI')
+      .where('sk')
+      .eq(id)
+      .attributes(['pk'])
+      .and()
+      .attribute('name')
+      .not()
+      .exists()
+      .all(100)
+      .exec();
+    await this.delete(id);
+    return await this.create({
+      ...updatedEntity.toPlain(),
+      packageIds: pkgsAffected.map((pkg) => pkg.pk),
+    });
   }
 
   async linkToPkg(pkgId: string, vulnId: string) {
