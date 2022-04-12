@@ -68,6 +68,8 @@ async function bootstrap() {
     }
   }
 
+  await svc.loadDefaultVulns();
+
   await app.close();
 }
 bootstrap();
