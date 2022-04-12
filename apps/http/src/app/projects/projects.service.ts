@@ -84,7 +84,15 @@ export class ProjectsService {
   }
 
   async findRelatedPackages(id: string, lastKey?: string, limit = 10) {
-    const queryBuilder = this.model.query().where('pk').eq(id).limit(limit);
+    const queryBuilder = this.model
+      .query()
+      .where('pk')
+      .eq(id)
+      .and()
+      .attribute('name')
+      .not()
+      .exists()
+      .limit(limit);
     if (lastKey) queryBuilder.startAt({ pk: id, sk: lastKey });
     const res = await queryBuilder.exec();
     const withMaxVuln = async (id: string) => {
