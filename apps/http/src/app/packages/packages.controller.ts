@@ -103,6 +103,7 @@ export class PackagesController {
       lastKey,
       limit
     );
+    if (res.length <= 0) return [];
     return res.map((r) => r.toPlain());
   }
 }

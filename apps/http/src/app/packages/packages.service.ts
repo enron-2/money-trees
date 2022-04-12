@@ -166,6 +166,7 @@ export class PackagesService {
     }
 
     const prjs = await prjQuery.exec();
+    if (prjs.length <= 0) return [];
     const resolvedProjects = await this.model.batchGet(
       prjs.map((prj) => ({
         pk: prj.pk,
