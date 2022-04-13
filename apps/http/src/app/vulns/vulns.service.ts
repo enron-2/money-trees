@@ -226,10 +226,12 @@ export class VulnsService {
   }
 
   async linkToPkg(pkgId: string, vulnId: string) {
+    // TODO: possibly update project maxVuln
     await this.model.create({ pk: pkgId, sk: vulnId });
   }
 
   async unlinkFromPkg(pkgId: string, vulnId: string) {
+    // TODO: possibly update project maxVuln
     await this.model.delete({ pk: pkgId, sk: vulnId });
   }
 
