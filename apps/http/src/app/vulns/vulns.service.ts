@@ -40,6 +40,7 @@ export class VulnsService {
       queryBuilder.startAt({
         type: EntityType.Vuln,
         pk: lastKey,
+        sk: lastKey,
       });
 
     if (attrs) {
