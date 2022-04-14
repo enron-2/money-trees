@@ -1,13 +1,16 @@
+import { ulid } from 'ulid';
 import { VulnEntity } from './vuln';
 describe('Vuln entity loader', () => {
   it('should load', () => {
+    const ulidPart = ulid();
     const entity = VulnEntity.fromDocument({
       type: 'Vuln',
       name: 'CVE-111',
       severity: 5,
+      ulid: ulidPart,
     });
     expect(entity).toBeDefined();
-    expect(entity.id).toBe(`VLN#${String.fromCodePoint(5)}#CVE-111`);
+    expect(entity.id).toBe(`VLN#${String.fromCodePoint(5 + 32)}#${ulidPart}`);
   });
 
   it('should transform severity to int', () => {
