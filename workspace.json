@@ -5,6 +5,7 @@
     "deployment": "apps/deployment",
     "http": "apps/http",
     "parser": "apps/parser",
+    "scanner": "apps/scanner",
     "schemas": "libs/schemas",
     "seeder": "apps/seeder"
   }
