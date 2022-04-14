@@ -1,15 +1,14 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
-import { ulid } from 'ulid';
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { ParserService } from '@money-trees/parser/parser.service';
+import { Injectable } from '@nestjs/common';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import { MainTableDoc, MainTableKey } from '@schemas/entities/entity';
-import { EntityType, VulnEntity } from '@schemas/entities';
 import { chunk } from 'lodash';
+
+/* eslint-disable  @nrwl/nx/enforce-module-boundaries */
+import { ParserService } from '@money-trees/parser/parser.service';
+import { VulnsService } from '@money-trees/http/vulns/vulns.service';
+/* eslint-enable @nrwl/nx/enforce-module-boundaries */
+
+import { MainTableDoc, MainTableKey } from '@schemas/entities/entity';
+import { EntityType } from '@schemas/entities';
 
 type RepoInfo = {
   owner: string;
@@ -19,12 +18,15 @@ type RepoInfo = {
 @Injectable()
 export class SeederService {
   parserSvc: ParserService;
+  vulnSvc: VulnsService;
+
   constructor(
     @InjectModel('MainTable')
     readonly model: Model<MainTableDoc, MainTableKey>
   ) {
     this.parserSvc = new ParserService(model);
     this.parserSvc.domain = process.env.DOMAIN;
+    this.vulnSvc = new VulnsService(model);
   }
 
   async loadContent(content: string, repoInfo: RepoInfo) {
@@ -60,95 +62,10 @@ export class SeederService {
       );
       const exists = await query.exec();
       if (exists && exists.length > 0) continue;
-      await this.create({ ...meta, packageIds: ['PKG#collection-map#1.0.0'] });
+      await this.vulnSvc.create({
+        ...meta,
+        packageIds: ['PKG#collection-map#1.0.0'],
+      });
     }
-  }
-
-  async create({
-    packageIds,
-    ...vulnCreate
-  }: {
-    name: string;
-    description?: string;
-    severity: number;
-    packageIds: string[];
-  }) {
-    let vulnEntity = VulnEntity.fromDocument({
-      ...vulnCreate,
-      ulid: ulid(),
-      type: EntityType.Vuln,
-    });
-
-    const vuln = await this.model.create({
-      ...vulnEntity.keys(),
-      ...vulnCreate,
-      ulid: vulnEntity.ulid,
-      type: EntityType.Vuln,
-    });
-
-    vulnEntity = VulnEntity.fromDocument(vuln);
-
-    const resolvedPkgs = await this.model.batchGet(
-      packageIds.map((id) => ({ pk: id, sk: id }))
-    );
-
-    for (const id of packageIds) {
-      const found = resolvedPkgs.find((pkg) => pkg.pk === id);
-      if (!found) throw new NotFoundException(`Package ID: ${id} not found`);
-    }
-
-    const { unprocessedItems } = await this.model.batchPut(
-      resolvedPkgs.map((pkg) => ({ pk: pkg.pk, sk: vulnEntity.sk }))
-    );
-    if (unprocessedItems.length > 0) {
-      throw new InternalServerErrorException(
-        `Unprocessed items:\n${unprocessedItems}`
-      );
-    }
-
-    const queryGen = (pk: string) =>
-      this.model
-        .query()
-        .using('InverseGSI')
-        .where('sk')
-        .eq(pk)
-        .and()
-        .where('name')
-        .not()
-        .exists()
-        .attributes(['pk'])
-        .exec();
-    const queryResults = await Promise.all(
-      resolvedPkgs.map((p) => queryGen(p.pk))
-    );
-
-    const affectedProjects = await this.model.batchGet(
-      [...new Set(queryResults.flat().map((prj) => prj.pk))].map((prj) => ({
-        pk: prj,
-        sk: prj,
-      }))
-    );
-    await Promise.all(
-      affectedProjects
-        .filter(
-          (prj) =>
-            !prj.worstVuln || prj.worstVuln.severity < vulnEntity.severity
-        )
-        .map((prj) =>
-          this.model.update(
-            { pk: prj.pk, sk: prj.sk },
-            {
-              $SET: {
-                worstVuln: {
-                  severity: vulnEntity.severity,
-                  id: vulnEntity.id,
-                },
-              },
-            }
-          )
-        )
-    );
-
-    return vulnEntity;
   }
 }
