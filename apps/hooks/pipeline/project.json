@@ -1,0 +1,75 @@
+{
+  "root": "apps/hooks/pipeline",
+  "sourceRoot": "apps/hooks/pipeline/src",
+  "projectType": "application",
+  "targets": {
+    "packer": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "nx run hooks-pipeline:clean-dist",
+          "nx run hooks-pipeline:build:production",
+          "nx run hooks-pipeline:node_modules",
+          "echo \"Bundle size: $(du -sh dist/apps/hooks/pipeline | cut -f1)\""
+        ],
+        "parallel": false
+      }
+    },
+    "clean-dist": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "echo 'Removing dist/apps/hooks/pipeline'",
+          "rm -rf ./dist/apps/hooks/pipeline"
+        ],
+        "parallel": false
+      }
+    },
+    "build": {
+      "executor": "@nrwl/node:webpack",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/hooks/pipeline",
+        "main": "apps/hooks/pipeline/src/main.ts",
+        "tsConfig": "apps/hooks/pipeline/tsconfig.app.json",
+        "generatePackageJson": true,
+        "assets": ["apps/hooks/pipeline/src/assets"]
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false,
+          "fileReplacements": [
+            {
+              "replace": "apps/hooks/pipeline/src/environments/environment.ts",
+              "with": "apps/hooks/pipeline/src/environments/environment.prod.ts"
+            }
+          ]
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/node:node",
+      "options": {
+        "buildTarget": "hooks-pipeline:build"
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/hooks/pipeline/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/apps/hooks/pipeline"],
+      "options": {
+        "jestConfig": "apps/hooks/pipeline/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

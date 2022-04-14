@@ -1,0 +1,75 @@
+{
+  "root": "apps/hooks/link-webhook",
+  "sourceRoot": "apps/hooks/link-webhook/src",
+  "projectType": "application",
+  "targets": {
+    "packer": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "nx run hooks-link-webhook:clean-dist",
+          "nx run hooks-link-webhook:build:production",
+          "nx run hooks-link-webhook:node_modules",
+          "echo \"Bundle size: $(du -sh dist/apps/hooks/link-webhook | cut -f1)\""
+        ],
+        "parallel": false
+      }
+    },
+    "clean-dist": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": [
+          "echo 'Removing dist/apps/hooks/link-webhook'",
+          "rm -rf ./dist/apps/hooks/link-webhook"
+        ],
+        "parallel": false
+      }
+    },
+    "build": {
+      "executor": "@nrwl/node:webpack",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/hooks/link-webhook",
+        "main": "apps/hooks/link-webhook/src/main.ts",
+        "tsConfig": "apps/hooks/link-webhook/tsconfig.app.json",
+        "generatePackageJson": true,
+        "assets": ["apps/hooks/link-webhook/src/assets"]
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false,
+          "fileReplacements": [
+            {
+              "replace": "apps/hooks/link-webhook/src/environments/environment.ts",
+              "with": "apps/hooks/link-webhook/src/environments/environment.prod.ts"
+            }
+          ]
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/node:node",
+      "options": {
+        "buildTarget": "hooks-link-webhook:build"
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/hooks/link-webhook/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/apps/hooks/link-webhook"],
+      "options": {
+        "jestConfig": "apps/hooks/link-webhook/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}
