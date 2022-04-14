@@ -9,6 +9,7 @@ import { ParserService } from '@money-trees/parser/parser.service';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { MainTableDoc, MainTableKey } from '@schemas/entities/entity';
 import { EntityType, VulnEntity } from '@schemas/entities';
+import { chunk } from 'lodash';
 
 type RepoInfo = {
   owner: string;
@@ -29,6 +30,9 @@ export class SeederService {
   async loadContent(content: string, repoInfo: RepoInfo) {
     const lockFile = await this.parserSvc.createLockFile(
       content.replace(/npmjs\.org/g, `${process.env.DOMAIN}.org`)
+    );
+    lockFile.packages = new Map(
+      chunk(Array.from(lockFile.packages.entries()), 10).map((e) => e[0])
     );
     return this.parserSvc.saveFileContents(lockFile, {
       owner: repoInfo.owner,
@@ -56,7 +60,7 @@ export class SeederService {
       );
       const exists = await query.exec();
       if (exists && exists.length > 0) continue;
-      await this.create({ ...meta, packageIds: ['PKG#chalk#2.4.2'] });
+      await this.create({ ...meta, packageIds: ['PKG#collection-map#1.0.0'] });
     }
   }
 
