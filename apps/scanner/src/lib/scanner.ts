@@ -18,11 +18,11 @@ const fetch_from_s3 = async (client : S3Client, scanner : BucketType) => {
 	}
 }
 
-export const setup = async (event : any) => {
-	const abc = event.Records[0].s3.bucket.name
+export const configure = async (event : any) => {
+	const region = event.Records[0].s3.bucket.region
 
 	const client = new S3Client({
-		region: config.region,
+		region: region,
 		credentials: {
 			accessKeyId: process.env.ACCESS_KEY_ID,
 			secretAccessKey: process.env.SECRET_ACCESS_KEY

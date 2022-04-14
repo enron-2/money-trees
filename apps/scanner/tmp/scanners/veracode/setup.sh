@@ -13,12 +13,6 @@ cleanup() {
     rm -rf ./veracode
 }
 
-if [[ $# != 1 ]]; then
-    echo "usage: ..."
-elif [[ $1 = "install" ]]; then
-    install()
-elif [[ $1 = "run" ]]; then
-    run($2)
-elif [[ $1 = "cleanup" ]]; then
-    cleanup()
-fi
+[[ $1 = "install" ]] && install()
+[[ $1 = "cleanup" ]] && cleanup()
+[[ $1 = "run" ]]     && run()

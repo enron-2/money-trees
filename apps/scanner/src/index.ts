@@ -1,7 +1,7 @@
-import { setup } from '../lib/scanner';
+import { configure } from './lib/scanner';
 
 exports.handler = async (event : any) => {
-    const resp = setup(event);
+    const resp = configure(event);
 
     return {
         statusCode: 200,
