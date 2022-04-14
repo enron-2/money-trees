@@ -70,7 +70,7 @@ describe('Vulns Controller', () => {
           name: 'CVE-hi-there',
           description: 'some desc.',
           severity: 4,
-          packageIds: ['PKG#chalk#4.1.1'],
+          packageIds: ['PKG#rimraf#2.6.3'],
         })
         .expect(201);
       expect(body?.id).toBeDefined();
@@ -88,7 +88,7 @@ describe('Vulns Controller', () => {
         .send({
           name: 'CVE-MAX',
           severity: 10,
-          packageIds: ['PKG#chalk#4.1.1'],
+          packageIds: ['PKG#rimraf#2.6.3'],
         })
         .expect(201);
       expect(body?.id).toBeDefined();
@@ -107,12 +107,12 @@ describe('Vulns Controller', () => {
           .send(body)
           .expect(400);
       await Promise.all([
-        makeReq({ name: 'CVE-MAX', packageIds: ['PKG#chalk#4.1.1'] }),
-        makeReq({ severity: 5, packageIds: ['PKG#chalk#4.1.1'] }),
+        makeReq({ name: 'CVE-MAX', packageIds: ['PKG#rimraf#2.6.3'] }),
+        makeReq({ severity: 5, packageIds: ['PKG#rimraf#2.6.3'] }),
         makeReq({
           name: 'Hiya-there',
           severity: 111,
-          packageIds: ['PKG#chalk#4.1.1'],
+          packageIds: ['PKG#rimraf#2.6.3'],
         }),
       ]);
     });
@@ -204,7 +204,7 @@ describe('Vulns Controller', () => {
           .send({
             name: 'CVE-MAX',
             severity: 10,
-            packageIds: ['PKG#chalk#4.1.1'],
+            packageIds: ['PKG#rimraf#2.6.3'],
           })
           .expect(201);
         const id = body?.id;

@@ -51,8 +51,8 @@ describe('Packages Controller', () => {
         .expect(400);
     });
 
-    it('GET name=chalk', async () => {
-      const name = 'chalk';
+    it('GET name=collection-map', async () => {
+      const name = 'collection-map';
       const { body } = await request(app.getHttpServer())
         .get('/packages')
         .query({ name })
@@ -80,12 +80,12 @@ describe('Packages Controller', () => {
 
   describe('/packages/{id}', () => {
     it('GET', async () => {
-      const pkg = encodeURIComponent('PKG#chalk#2.4.2');
+      const pkg = encodeURIComponent('PKG#collection-map#1.0.0');
       const { body } = await request(app.getHttpServer())
         .get(`/packages/${pkg}`)
         .expect(200);
-      expect(body?.name).toEqual('chalk');
-      expect(body?.version).toEqual('2.4.2');
+      expect(body?.name).toEqual('collection-map');
+      expect(body?.version).toEqual('1.0.0');
     });
 
     it('GET (404)', async () => {
@@ -97,7 +97,7 @@ describe('Packages Controller', () => {
   });
 
   describe('/packages/{id}/vulns', () => {
-    const pkg = encodeURIComponent('PKG#chalk#2.4.2');
+    const pkg = encodeURIComponent('PKG#collection-map#1.0.0');
     const url = `/packages/${pkg}/vulns`;
     it('GET', async () => {
       const { body } = await request(app.getHttpServer()).get(url).expect(200);
@@ -179,7 +179,7 @@ describe('Packages Controller', () => {
   });
 
   describe('/packages/{id}/projects', () => {
-    const pkg = encodeURIComponent('PKG#chalk#2.4.2');
+    const pkg = encodeURIComponent('PKG#collection-map#1.0.0');
     const url = `/packages/${pkg}/projects`;
 
     it('GET', async () => {
