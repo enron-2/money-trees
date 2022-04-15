@@ -4,6 +4,8 @@
     "constants": "libs/constants",
     "core": "libs/core",
     "deployment": "apps/deployment",
+    "hooks-link-webhook": "apps/hooks/link-webhook",
+    "hooks-pipeline": "apps/hooks/pipeline",
     "http": "apps/http",
     "parser": "apps/parser",
     "schemas": "libs/schemas",

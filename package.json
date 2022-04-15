@@ -10,9 +10,10 @@
     "test:clean": "nx run-many --target=test --all --parallel=1 --skip-nx-cache",
     "seed": "nx serve seeder",
     "lint": "nx run-many --target=lint --all --parallel=1 --verbose",
-    "build": "nx run-many --target=packer --projects=parser,http",
+    "build": "nx run-many --target=packer --projects=parser,http,hooks-link-webhook,hooks-pipeline",
     "prepare": "husky install",
-    "commit": "cz"
+    "commit": "cz",
+    "nx": "nx"
   },
   "private": true,
   "dependencies": {
@@ -35,6 +36,7 @@
     "joi": "^17.6.0",
     "lodash": "^4.17.21",
     "nestjs-dynamoose": "^0.3.4",
+    "octokit": "^1.7.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.0.0",
     "tslib": "^2.0.0",
