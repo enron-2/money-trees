@@ -10,7 +10,7 @@
     "test:clean": "nx run-many --target=test --all --parallel=1 --skip-nx-cache",
     "seed": "nx serve seeder",
     "lint": "nx run-many --target=lint --all --parallel=1 --verbose",
-    "build": "nx run-many --target=packer --projects=parser,http",
+    "build": "nx run-many --target=packer --projects=parser,http,hooks-link-webhook,hooks-pipeline",
     "prepare": "husky install",
     "commit": "cz",
     "nx": "nx"
