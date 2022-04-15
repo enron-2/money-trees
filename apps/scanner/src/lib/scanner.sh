@@ -1,10 +1,6 @@
 #!/bin/bash
 
 install() {
-
-    # grab the scripts options
-    aws s3api get-object --bucket e2-scanners --key config/scripts ./tmp/config
-
     # download each of the scanner scripts
     while read script; do
         aws s3api get-object --bucket e2-scanners --key scanners/$script.zip ./tmp/scanners/$script.zip
@@ -29,13 +25,3 @@ cleanup() {
     rm -rf ./tmp/repo/* ./tmp/config
     for scanner in ./tmp/scanners/*; do ./tmp/scanners/$scanner/run.sh cleanup; done
 }
-
-if [[ $# != 1 ]]; then
-    echo "usage: ..."
-elif [[ $1 = "install" ]]; then
-    install()
-elif [[ $1 = "run" ]]; then
-    run($2)
-elif [[ $1 = "cleanup" ]]; then
-    cleanup()
-fi

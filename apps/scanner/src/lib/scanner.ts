@@ -1,35 +1,9 @@
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3"; // AbortMultipartUploadCommand ??
+import { configure } from './configure';
 
-interface BucketType {
-	Bucket: string,
-	Key: string
+export const scanner = (event : any) => {
+    const resp = configure(event);
 }
 
-const fetch_from_s3 = async (client : S3Client, scanner : BucketType) => {
-	const command = new GetObjectCommand({ Bucket: `e2/${scanner.Bucket}`, Key: `${scanner.Key}.zip` })
-
-	try {
-		const response = await client.send(command);
-		return response.Body.toString();
-	} catch (error : any) {
-		console.error('fail');
-	} finally {
-		console.log('hello');
-	}
-}
-
-export const configure = async (event : any) => {
-	const region = event.Records[0].s3.bucket.region
-
-	const client = new S3Client({
-		region: region,
-		credentials: {
-			accessKeyId: process.env.ACCESS_KEY_ID,
-			secretAccessKey: process.env.SECRET_ACCESS_KEY
-		}
-	});
-
-	const config = JSON.parse(await fetch_from_s3(client, { Bucket: 'e2', Key: 'config' }));
-
-	config.scanners.forEach(async (scanner : any) => fetch_from_s3(client, scanner));
+const run = () => {
+    
 }
