@@ -8,6 +8,7 @@ import { PackageEntity, ProjectEntity } from '@schemas/entities';
 import { PackageLock, PkgMeta } from './package-lock.dto';
 import { MainTableDoc, MainTableKey } from '@schemas/entities/entity';
 import { EntityType } from '@schemas/entities/enums';
+import { TableName } from '@constants';
 
 type RepoMeta = { owner: string; name: string };
 
@@ -16,7 +17,7 @@ export class ParserService {
   domain: string;
 
   constructor(
-    @InjectModel('MainTable')
+    @InjectModel(TableName)
     readonly model: Model<MainTableDoc, MainTableKey>
   ) {}
 

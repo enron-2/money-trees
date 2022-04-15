@@ -12,11 +12,12 @@ import {
   VulnEntity,
 } from '@schemas/entities';
 import { plainToInstance } from 'class-transformer';
+import { TableName, GSI } from '@constants';
 
 @Injectable()
 export class PackagesService {
   constructor(
-    @InjectModel('MainTable')
+    @InjectModel(TableName)
     private readonly model: Model<MainTableDoc, MainTableKey>
   ) {}
 
@@ -28,7 +29,7 @@ export class PackagesService {
   ) {
     const queryBuilder = this.model
       .query()
-      .using('TypeGSI')
+      .using(GSI.Type)
       .where('type')
       .eq(EntityType.Package);
 
@@ -158,7 +159,7 @@ export class PackagesService {
 
     const prjQuery = this.model
       .query()
-      .using('InverseGSI')
+      .using(GSI.Inverse)
       .where('sk')
       .eq(packageId)
       .limit(limit);

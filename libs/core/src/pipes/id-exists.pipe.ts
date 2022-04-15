@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException, PipeTransform } from '@nestjs/common';
 import { InjectModel, Model } from 'nestjs-dynamoose';
+import { TableName } from '@constants';
 
 @Injectable()
 export class IdExistsPipe implements PipeTransform<string, Promise<string>> {
   constructor(
-    @InjectModel('MainTable')
+    @InjectModel(TableName)
     private readonly model: Model<unknown, { pk: string; sk: string }>
   ) {}
 

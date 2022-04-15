@@ -15,12 +15,13 @@ import {
 import { plainToInstance } from 'class-transformer';
 import { PackageDto } from '../dto';
 import { SortOrder } from 'dynamoose/dist/General';
+import { GSI, TableName } from '@constants';
 import { ulid } from 'ulid';
 
 @Injectable()
 export class VulnsService {
   constructor(
-    @InjectModel('MainTable')
+    @InjectModel(TableName)
     private readonly model: Model<MainTableDoc, MainTableKey>
   ) {}
 
@@ -32,7 +33,7 @@ export class VulnsService {
   ) {
     const queryBuilder = this.model
       .query()
-      .using('TypeGSI')
+      .using(GSI.Type)
       .where('type')
       .eq(EntityType.Vuln);
 
@@ -80,7 +81,7 @@ export class VulnsService {
   async packagesAffected(id: string, limit = 10, lastKey?: string) {
     const queryBuilder = this.model
       .query()
-      .using('InverseGSI')
+      .using(GSI.Inverse)
       .where('sk')
       .eq(id)
       .limit(limit)
@@ -150,7 +151,7 @@ export class VulnsService {
     const queryGen = (pk: string) =>
       this.model
         .query()
-        .using('InverseGSI')
+        .using(GSI.Inverse)
         .where('sk')
         .eq(pk)
         .and()
@@ -208,7 +209,7 @@ export class VulnsService {
     const updatedEntity = VulnEntity.fromDocument({ ...vuln, ...input });
     const pkgsAffected = await this.model
       .query()
-      .using('InverseGSI')
+      .using(GSI.Inverse)
       .where('sk')
       .eq(id)
       .attributes(['pk'])
@@ -255,7 +256,7 @@ export class VulnsService {
     // get affected projects
     const affectedPrjIds = await this.model
       .query()
-      .using('InverseGSI')
+      .using(GSI.Inverse)
       .where('sk')
       .eq(pkgId)
       .startAt({ pk: pkgId, sk: pkgId })
@@ -289,7 +290,7 @@ export class VulnsService {
     // get affected projects
     const affectedPrjIds = await this.model
       .query()
-      .using('InverseGSI')
+      .using(GSI.Inverse)
       .where('sk')
       .eq(pkgId)
       .startAt({ pk: pkgId, sk: pkgId })
@@ -370,7 +371,7 @@ export class VulnsService {
   async delete(id: string) {
     const pkgToModify = await this.model
       .query()
-      .using('InverseGSI')
+      .using(GSI.Inverse)
       .where('sk')
       .eq(id)
       .and()
@@ -387,7 +388,7 @@ export class VulnsService {
     const queryGen = (pk: string) =>
       this.model
         .query()
-        .using('InverseGSI')
+        .using(GSI.Inverse)
         .where('sk')
         .eq(pk)
         .and()
