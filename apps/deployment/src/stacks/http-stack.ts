@@ -31,15 +31,12 @@ export class HttpStack extends Stack {
     const httpLambda = new NodeLambdaFunc(this, 'HttpHandlerFunc', {
       code: lambda.Code.fromAsset(pathToCode),
       environment: {
-        PROJECT_TABLE: database.Project.tableName,
-        PACKAGE_TABLE: database.Package.tableName,
-        VULN_TABLE: database.Vuln.tableName,
+        TABLE_NAME: database.table.tableName,
       },
     }).LambdaFunction;
 
-    database.grantReadAll(httpLambda);
-    database.grantWrite(httpLambda, 'Package');
-    database.grantWrite(httpLambda, 'Vuln');
+    database.grantRead(httpLambda);
+    database.grantWrite(httpLambda);
 
     const api = new apiGw.LambdaRestApi(this, 'RESTEndpoint', {
       handler: httpLambda,

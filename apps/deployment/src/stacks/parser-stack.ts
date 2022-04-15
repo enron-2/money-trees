@@ -30,17 +30,14 @@ export class ParserStack extends Stack {
     const parserLambda = new NodeLambdaFunc(this, 'ParserHandlerFunc', {
       code: lambda.Code.fromAsset(pathToCode),
       environment: {
-        PROJECT_TABLE: database.Project.tableName,
-        PACKAGE_TABLE: database.Package.tableName,
-        VULN_TABLE: database.Vuln.tableName,
+        TABLE_NAME: database.table.tableName,
         DOMAIN: 'enron2',
       },
       timeout: Duration.seconds(30),
     }).LambdaFunction;
 
-    database.grantReadAll(parserLambda);
-    database.grantWrite(parserLambda, 'Package');
-    database.grantWrite(parserLambda, 'Project');
+    database.grantRead(parserLambda);
+    database.grantWrite(parserLambda);
 
     // TODO: if stageName == prod
     // Add 'cognito' or some other auth method
