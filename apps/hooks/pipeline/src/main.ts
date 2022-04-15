@@ -1,10 +1,10 @@
 import { APIGatewayEvent, Handler } from 'aws-lambda';
 import { Octokit } from 'octokit';
 import { exec } from 'child_process';
+import { Lambda } from 'aws-sdk';
+import { SecretsManager } from 'aws-sdk';
 
-// TODO: get Peronal Access Token from KMS
-const token = process.env.TOKEN;
-const octokit = new Octokit({ auth: token });
+const secretsManager = new SecretsManager();
 
 interface RepoProps {
   name: string;
@@ -15,22 +15,31 @@ interface RepoProps {
 
 interface GithubWebhookPushEvent extends APIGatewayEvent {
   ref: string | undefined;
-  repository: RepoProps;
+  repository?: RepoProps;
 }
 
 export const handler: Handler = async (event: GithubWebhookPushEvent) => {
-  const isConnectRequest = event.ref === undefined;
-
-  const branch = /refs\/heads\/(.*)/.exec(event.ref);
-  const isMainBranch = branch && branch[1] === event.repository.master_branch;
-
-  // check for package
-  const isPackage = await fetch('database TODO');
+  const { SecretString: token } = await secretsManager
+    .getSecretValue({ SecretId: 'GITHUB_TOKEN' })
+    .promise();
+  const octokit = new Octokit({ auth: token });
 
   const orgName = event.repository.owner.name;
   const repoName = event.repository.name;
+  const branch = /refs\/heads\/(.*)/.exec(event.ref);
+  const isMainBranch = branch && branch[1] === event.repository.master_branch;
+  const isConnectRequest = event.ref === undefined; // register initial webhook
 
-  if (!isConnectRequest && !isMainBranch)
+  // check for package
+  const databaseURL = process.env.DATABASE_URL;
+  const { status } = await fetch(
+    `${databaseURL}/projects/${encodeURIComponent(
+      `PRJ#${orgName}/${repoName}`
+    )}`
+  );
+  const isPackage = status === 404;
+
+  if (isConnectRequest || !isMainBranch)
     return { statusCode: 400, body: 'Not a main branch' };
 
   if (isPackage) {
@@ -44,7 +53,22 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
     );
     exec('npm publish');
   } else {
-    // TODO: parser (package-lock.json)
+    // parse package-lock.json
+    const resp = await octokit.rest.repos.getContent({
+      owner: orgName,
+      repo: repoName,
+      path: 'package-lock.json',
+    });
+
+    const lambdaName = process.env.PARSER_LAMBDA;
+    new Lambda({}).invoke({
+      FunctionName: lambdaName,
+      Payload: JSON.stringify({
+        content: (resp.data as any).content,
+        owner: orgName,
+        repo: repoName,
+      }),
+    });
   }
 
   // TODO: scanner
@@ -52,7 +76,7 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
   return {
     statusCode: 200,
     body: JSON.stringify(
-      `Successfully created ${
+      `Pipeline ran for created ${
         isPackage ? 'package' : 'project'
       } https://github.com/${orgName}/${repoName}`
     ),
