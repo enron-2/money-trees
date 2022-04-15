@@ -67,20 +67,7 @@ describe('Parser module', () => {
     await app.init();
 
     svc = app.get(ParserService);
-
-    const scanner = () =>
-      svc.model.scan().limit(25).attributes(['sk', 'pk']).exec();
-    let items = await scanner();
-    let count = 0;
-    while (items.length > 0) {
-      count += items.length;
-      await svc.model.batchDelete(
-        items.map((item) => ({ sk: item.sk, pk: item.pk }))
-      );
-      items = await scanner();
-    }
-    console.log(`Deleted ${count} entries`);
-  }, 5 * 60000);
+  });
 
   it('Should be defined', () => {
     expect(svc).toBeDefined();
@@ -282,19 +269,4 @@ describe('Parser module', () => {
     expect(prj.url).toBe(`https://github.com/${source.repo}`);
     expect(prj.name).toBe(source.repo);
   });
-
-  afterAll(async () => {
-    const scanner = () =>
-      svc.model.scan().limit(25).attributes(['sk', 'pk']).exec();
-    let items = await scanner();
-    let count = 0;
-    while (items.length > 0) {
-      count += items.length;
-      await svc.model.batchDelete(
-        items.map((item) => ({ sk: item.sk, pk: item.pk }))
-      );
-      items = await scanner();
-    }
-    console.log(`Deleted ${count} entries`);
-  }, 5 * 60000);
 });
