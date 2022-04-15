@@ -5,7 +5,7 @@ import { join } from 'path';
 import { DatabaseStack } from './database-stack';
 import { NodeLambdaFunc } from '../constructs';
 
-interface HttpStackProp extends StackProps {
+interface HttpStackProps extends StackProps {
   database: DatabaseStack;
   stageName: string;
 }
@@ -13,7 +13,7 @@ interface HttpStackProp extends StackProps {
 export class HttpStack extends Stack {
   apiURL: string;
 
-  constructor(scope: Construct, id: string, props: HttpStackProp) {
+  constructor(scope: Construct, id: string, props: HttpStackProps) {
     const { database, ...stackProps } = props;
     super(scope, id, stackProps);
 

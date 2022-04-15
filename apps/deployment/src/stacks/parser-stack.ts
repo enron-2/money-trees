@@ -6,13 +6,13 @@ import { DatabaseStack } from './database-stack';
 import { join } from 'path';
 import { NodeLambdaFunc } from '../constructs';
 
-interface ParserStackProp extends StackProps {
+interface ParserStackProps extends StackProps {
   database: DatabaseStack;
   stageName: string;
 }
 
 export class ParserStack extends Stack {
-  constructor(scope: Construct, id: string, props: ParserStackProp) {
+  constructor(scope: Construct, id: string, props: ParserStackProps) {
     const { database, ...stackProps } = props;
     super(scope, id, stackProps);
 
