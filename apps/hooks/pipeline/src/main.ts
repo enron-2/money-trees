@@ -31,11 +31,9 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
   const isConnectRequest = event.ref === undefined; // register initial webhook
 
   // check for package
-  const databaseURL = process.env.DATABASE_URL;
+  const backendURL = process.env.BACKEND_URL;
   const { status } = await fetch(
-    `${databaseURL}/projects/${encodeURIComponent(
-      `PRJ#${orgName}/${repoName}`
-    )}`
+    `${backendURL}/projects/${encodeURIComponent(`PRJ#${orgName}/${repoName}`)}`
   );
   const isPackage = status === 404;
 
