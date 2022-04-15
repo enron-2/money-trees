@@ -331,7 +331,17 @@ export class VulnsService {
           })
         )
       ).filter((e) => !!e);
-      if (maxVulnsInPrj.length === 0) continue;
+      if (maxVulnsInPrj.length === 0) {
+        await this.model.update(
+          { pk: prj.pk, sk: prj.pk },
+          {
+            $REMOVE: {
+              worstVuln: null,
+            },
+          }
+        );
+        continue;
+      }
       const trueMax = maxVulnsInPrj.reduce((prev, curr) =>
         prev?.severity ?? -1 > curr?.severity ?? -1 ? prev : curr
       );
