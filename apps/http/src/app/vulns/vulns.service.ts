@@ -226,13 +226,131 @@ export class VulnsService {
   }
 
   async linkToPkg(pkgId: string, vulnId: string) {
-    // TODO: possibly update project maxVuln
+    // get current package's max vuln
+    const [maxVulnPk] = await this.model
+      .query()
+      .sort(SortOrder.descending)
+      .where('pk')
+      .eq(pkgId)
+      .and()
+      .attribute('name')
+      .not()
+      .exists()
+      .limit(1)
+      .exec();
+
+    // create link PKG.pk + VLN.pk
     await this.model.create({ pk: pkgId, sk: vulnId });
+
+    const maxVuln = await this.model.get({
+      pk: maxVulnPk?.pk ?? vulnId,
+      sk: maxVulnPk?.pk ?? vulnId,
+    });
+
+    // proceed if current PKG.max_vuln < VLN.severity
+    const vulnDoc = await this.model.get({ pk: vulnId, sk: vulnId });
+    if (maxVuln.severity >= vulnDoc.severity && maxVuln.pk !== vulnDoc.pk)
+      return;
+
+    // get affected projects
+    const affectedPrjIds = await this.model
+      .query()
+      .using('InverseGSI')
+      .where('sk')
+      .eq(pkgId)
+      .startAt({ pk: pkgId, sk: pkgId })
+      .exec();
+    const affectedPrs = await this.model.batchGet(
+      affectedPrjIds.map((prj) => ({
+        pk: prj.pk,
+        sk: prj.pk,
+      }))
+    );
+    // Get projects with lower worstVuln
+    const prjsWithLowerVuln = affectedPrs.filter(
+      (prj) => prj.worstVuln?.severity ?? -1 < vulnDoc.severity
+    );
+    // Set worstVuln to new vuln
+    await this.model.batchPut(
+      prjsWithLowerVuln.map((prj) => ({
+        ...prj,
+        worstVuln: {
+          id: vulnId,
+          severity: vulnDoc.severity,
+        },
+      }))
+    );
   }
 
   async unlinkFromPkg(pkgId: string, vulnId: string) {
-    // TODO: possibly update project maxVuln
+    // delete link
     await this.model.delete({ pk: pkgId, sk: vulnId });
+
+    // get affected projects
+    const affectedPrjIds = await this.model
+      .query()
+      .using('InverseGSI')
+      .where('sk')
+      .eq(pkgId)
+      .startAt({ pk: pkgId, sk: pkgId })
+      .exec();
+    const affectedPrs = await this.model.batchGet(
+      affectedPrjIds.map((prj) => ({ pk: prj.pk, sk: prj.pk }))
+    );
+    const prjsWithSameVulnId = affectedPrs.filter(
+      (prj) => prj.worstVuln?.id === vulnId
+    );
+    if (prjsWithSameVulnId.length === 0) return;
+    // get next highest vuln in project for each project
+    //    put new highest vuln in worstVuln attr
+    for (const prj of prjsWithSameVulnId) {
+      const pkgInPrjIds = await this.model
+        .query()
+        .where('pk')
+        .eq(prj.pk)
+        .sort(SortOrder.descending)
+        .startAt({ pk: prj.pk, sk: prj.pk })
+        .exec();
+      const maxVulnsInPrj = (
+        await Promise.all(
+          pkgInPrjIds.map(async (pkg) => {
+            const [maxVulnPk] = await this.model
+              .query()
+              .sort(SortOrder.descending)
+              .where('pk')
+              .eq(pkg.sk)
+              .and()
+              .attribute('name')
+              .not()
+              .exists()
+              .limit(1)
+              .exec();
+            return maxVulnPk
+              ? this.model.get({ pk: maxVulnPk.sk, sk: maxVulnPk.sk })
+              : undefined;
+          })
+        )
+      ).filter((e) => !!e);
+      if (maxVulnsInPrj.length === 0) continue;
+      const trueMax = maxVulnsInPrj.reduce((prev, curr) =>
+        prev?.severity ?? -1 > curr?.severity ?? -1 ? prev : curr
+      );
+      if (!trueMax) continue;
+      await this.model.update(
+        {
+          pk: prj.pk,
+          sk: prj.pk,
+        },
+        {
+          $SET: {
+            worstVuln: {
+              id: trueMax.pk,
+              severity: trueMax.severity,
+            },
+          },
+        }
+      );
+    }
   }
 
   /**

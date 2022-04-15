@@ -21,11 +21,14 @@ import {
 } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsInt, IsOptional, IsPositive } from 'class-validator';
-import { IdExistsPipe } from '@core/pipes';
+import { IdExistsPipe, RegexPipe } from '@core/pipes';
 import { PackageDetailDto, PackageDto, PaginationDto, VulnDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
 import { CreateVulnInput, UpdateVulnInput } from './vulns.dto';
 import { VulnsService } from './vulns.service';
+
+const PkgIdPipe = new RegexPipe(/^PKG#/);
+const VlnIdPipe = new RegexPipe(/^VLN#/);
 
 class VulnSearchInputDto extends PartialType(
   IntersectionType(OmitType(VulnDto, ['id', 'severity']), PaginationDto)
@@ -106,7 +109,7 @@ export class VulnsController {
   @UseInterceptors(new DtoConformInterceptor(PackageDto))
   @Get(':vulnId/packages')
   packagesAffectedByVuln(
-    @Param('vulnId', IdExistsPipe) vulnId: string,
+    @Param('vulnId', VlnIdPipe, IdExistsPipe) vulnId: string,
     @Query() { limit, lastKey }: PaginationDto
   ): Promise<PackageDto[]> {
     return this.vulnsService.packagesAffected(vulnId, limit, lastKey);
@@ -117,8 +120,8 @@ export class VulnsController {
   @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
   @Put(':vulnId/packages/:packageId')
   async addVulnToPackage(
-    @Param('packageId', IdExistsPipe) packageId: string,
-    @Param('vulnId', IdExistsPipe) vulnId: string
+    @Param('packageId', PkgIdPipe, IdExistsPipe) packageId: string,
+    @Param('vulnId', VlnIdPipe, IdExistsPipe) vulnId: string
   ) {
     await this.vulnsService.linkToPkg(packageId, vulnId);
   }
@@ -128,8 +131,8 @@ export class VulnsController {
   @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
   @Delete(':vulnId/packages/:packageId')
   async removeVulnFromPackage(
-    @Param('packageId', IdExistsPipe) packageId: string,
-    @Param('vulnId', IdExistsPipe) vulnId: string
+    @Param('packageId', PkgIdPipe, IdExistsPipe) packageId: string,
+    @Param('vulnId', VlnIdPipe, IdExistsPipe) vulnId: string
   ) {
     await this.vulnsService.unlinkFromPkg(packageId, vulnId);
   }
