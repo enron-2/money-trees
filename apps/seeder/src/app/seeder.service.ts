@@ -9,6 +9,7 @@ import { VulnsService } from '@money-trees/http/vulns/vulns.service';
 
 import { MainTableDoc, MainTableKey } from '@schemas/entities/entity';
 import { EntityType } from '@schemas/entities';
+import { TableName, GSI } from '@constants';
 
 type RepoInfo = {
   owner: string;
@@ -21,7 +22,7 @@ export class SeederService {
   vulnSvc: VulnsService;
 
   constructor(
-    @InjectModel('MainTable')
+    @InjectModel(TableName)
     readonly model: Model<MainTableDoc, MainTableKey>
   ) {
     this.parserSvc = new ParserService(model);
@@ -54,7 +55,7 @@ export class SeederService {
     for (const meta of metadatas) {
       const query = this.model
         .query()
-        .using('TypeGSI')
+        .using(GSI.Type)
         .where('type')
         .eq(EntityType.Vuln);
       Object.entries(meta).forEach(

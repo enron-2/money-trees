@@ -5,7 +5,7 @@ import { join } from 'path';
 import { DatabaseStack } from './database-stack';
 import { NodeLambdaFunc } from '../constructs';
 
-interface HttpStackProp extends StackProps {
+interface HttpStackProps extends StackProps {
   database: DatabaseStack;
   stageName: string;
 }
@@ -13,7 +13,7 @@ interface HttpStackProp extends StackProps {
 export class HttpStack extends Stack {
   apiURL: string;
 
-  constructor(scope: Construct, id: string, props: HttpStackProp) {
+  constructor(scope: Construct, id: string, props: HttpStackProps) {
     const { database, ...stackProps } = props;
     super(scope, id, stackProps);
 
@@ -31,15 +31,12 @@ export class HttpStack extends Stack {
     const httpLambda = new NodeLambdaFunc(this, 'HttpHandlerFunc', {
       code: lambda.Code.fromAsset(pathToCode),
       environment: {
-        PROJECT_TABLE: database.Project.tableName,
-        PACKAGE_TABLE: database.Package.tableName,
-        VULN_TABLE: database.Vuln.tableName,
+        TABLE_NAME: database.table.tableName,
       },
     }).LambdaFunction;
 
-    database.grantReadAll(httpLambda);
-    database.grantWrite(httpLambda, 'Package');
-    database.grantWrite(httpLambda, 'Vuln');
+    database.grantRead(httpLambda);
+    database.grantWrite(httpLambda);
 
     const api = new apiGw.LambdaRestApi(this, 'RESTEndpoint', {
       handler: httpLambda,

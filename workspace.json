@@ -1,6 +1,7 @@
 {
   "version": 2,
   "projects": {
+    "constants": "libs/constants",
     "core": "libs/core",
     "deployment": "apps/deployment",
     "http": "apps/http",

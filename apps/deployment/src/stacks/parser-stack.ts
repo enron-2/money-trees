@@ -6,13 +6,13 @@ import { DatabaseStack } from './database-stack';
 import { join } from 'path';
 import { NodeLambdaFunc } from '../constructs';
 
-interface ParserStackProp extends StackProps {
+interface ParserStackProps extends StackProps {
   database: DatabaseStack;
   stageName: string;
 }
 
 export class ParserStack extends Stack {
-  constructor(scope: Construct, id: string, props: ParserStackProp) {
+  constructor(scope: Construct, id: string, props: ParserStackProps) {
     const { database, ...stackProps } = props;
     super(scope, id, stackProps);
 
@@ -30,17 +30,14 @@ export class ParserStack extends Stack {
     const parserLambda = new NodeLambdaFunc(this, 'ParserHandlerFunc', {
       code: lambda.Code.fromAsset(pathToCode),
       environment: {
-        PROJECT_TABLE: database.Project.tableName,
-        PACKAGE_TABLE: database.Package.tableName,
-        VULN_TABLE: database.Vuln.tableName,
+        TABLE_NAME: database.table.tableName,
         DOMAIN: 'enron2',
       },
       timeout: Duration.seconds(30),
     }).LambdaFunction;
 
-    database.grantReadAll(parserLambda);
-    database.grantWrite(parserLambda, 'Package');
-    database.grantWrite(parserLambda, 'Project');
+    database.grantRead(parserLambda);
+    database.grantWrite(parserLambda);
 
     // TODO: if stageName == prod
     // Add 'cognito' or some other auth method
@@ -49,7 +46,7 @@ export class ParserStack extends Stack {
 
     const bucket = new s3.Bucket(this, `LockFileBucket`, {
       // TODO: handle access control to allow uploads from certain sources
-      bucketName: `lock-file-bucket-${props.stageName}`,
+      bucketName: `lock-file-bucket-${props.stageName.toLowerCase()}`,
     });
     bucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,

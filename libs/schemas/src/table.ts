@@ -1,4 +1,5 @@
 import { Schema } from 'dynamoose';
+import { GSI } from '@constants';
 
 export const MainSchema = new Schema({
   pk: {
@@ -10,7 +11,7 @@ export const MainSchema = new Schema({
     rangeKey: true,
     index: {
       global: true,
-      name: 'InverseGSI',
+      name: GSI.Inverse,
       rangeKey: 'pk',
     },
   },
@@ -18,7 +19,7 @@ export const MainSchema = new Schema({
     type: String,
     index: {
       global: true,
-      name: 'TypeGSI',
+      name: GSI.Type,
       rangeKey: 'pk',
     },
   },

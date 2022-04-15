@@ -5,9 +5,7 @@ export interface NodeLambdaFuncProps
   extends Omit<lambda.FunctionProps, 'runtime' | 'handler'> {
   code: lambda.Code;
   environment: {
-    VULN_TABLE: string;
-    PACKAGE_TABLE: string;
-    PROJECT_TABLE: string;
+    TABLE_NAME: string;
     [key: string]: string;
   };
 }

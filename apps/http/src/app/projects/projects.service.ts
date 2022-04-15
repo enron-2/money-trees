@@ -9,11 +9,12 @@ import {
 } from '@schemas/entities';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { SortOrder } from 'dynamoose/dist/General';
+import { GSI, TableName } from '@constants';
 
 @Injectable()
 export class ProjectsService {
   constructor(
-    @InjectModel('MainTable')
+    @InjectModel(TableName)
     private readonly model: Model<MainTableDoc, MainTableKey>
   ) {}
 
@@ -25,7 +26,7 @@ export class ProjectsService {
   ) {
     const queryBuilder = this.model
       .query()
-      .using('TypeGSI')
+      .using(GSI.Type)
       .where('type')
       .eq(EntityType.Project);
 
