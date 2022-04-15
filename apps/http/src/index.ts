@@ -13,7 +13,15 @@ async function bootstrap() {
   const expr = express();
   const app = await NestFactory.create(HttpModule, new ExpressAdapter(expr));
 
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: {
+        exposeUnsetFields: false,
+        excludeExtraneousValues: true,
+      },
+    })
+  );
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   // TODO: allow only 'frontend' origin

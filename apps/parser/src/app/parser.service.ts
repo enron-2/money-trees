@@ -1,21 +1,23 @@
 import 'reflect-metadata';
 import { plainToClass } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
-import { InjectModel, Model, Document } from 'nestjs-dynamoose';
+import { InjectModel, Model } from 'nestjs-dynamoose';
 import { Injectable, Logger } from '@nestjs/common';
-import { Package, PackageKey } from '@schemas/packages';
-import { Project, ProjectKey } from '@schemas/projects';
-import { PackageLock } from './package-lock.dto';
+import { chunk } from 'lodash';
+import { PackageEntity, ProjectEntity } from '@schemas/entities';
+import { PackageLock, PkgMeta } from './package-lock.dto';
+import { MainTableDoc, MainTableKey } from '@schemas/entities/entity';
+import { EntityType } from '@schemas/entities/enums';
 
 type RepoMeta = { owner: string; name: string };
 
 @Injectable()
 export class ParserService {
+  domain: string;
+
   constructor(
-    @InjectModel('Package')
-    readonly pkg: Model<Package, PackageKey, 'id'>,
-    @InjectModel('Project')
-    readonly prj: Model<Project, ProjectKey, 'id'>,
+    @InjectModel('MainTable')
+    readonly model: Model<MainTableDoc, MainTableKey>
   ) {}
 
   async createLockFile(rawFileContents: string, logger?: Logger) {
@@ -33,104 +35,138 @@ export class ParserService {
       logger?.log('Content validated');
     } catch (error: any) {
       throw new Error(
-        `Cannot process content: ${error?.toString() || 'Unknown'}`,
+        `Cannot process content: ${error?.toString() || 'Unknown'}`
       );
     }
 
     return lockFile;
   }
 
-  async parseFileContents(content: string, repository: RepoMeta) {
-    const logger = new Logger(`${repository.owner}/${repository.name}`);
-    let lockFile: PackageLock;
+  async saveFileContents(lockFile: PackageLock, repo: RepoMeta) {
+    const logger = new Logger(`${repo.owner}/${repo.name}`);
+    const newLockFile = this.removeNodeModulePrefix(lockFile);
+    const pkgs = await Promise.all(
+      this.filterPackagesByDomain(newLockFile.packages).map(
+        async ([name, pkg]) => {
+          const pkgFound = await this.getPackage(name, pkg.version);
+          if (pkgFound) {
+            logger.log(`Found package ${name} in database`);
+            return pkgFound;
+          }
+          const newPkg = await this.createPackage(name, pkg);
+          logger.log(`Created package ${name}`);
+          return newPkg;
+        }
+      )
+    );
+    logger.log(`Processed ${pkgs.length ?? 0} packages`);
+
+    const prjName = `${repo.owner}/${repo.name}`;
+    const url = `https://github.com/${prjName}`;
+    const prjFound = await this.getProject(`PRJ#${prjName}`);
+    if (prjFound) {
+      logger.log(`Deleting project ${prjFound.name}`);
+      await this.deleteProject(prjFound.id);
+    }
+    const prjCreated = await this.createProject(
+      prjName,
+      url,
+      pkgs.map((p) => p.id)
+    );
+    logger.log(`Created project ${prjCreated.name}`);
+    return `Project: ${prjCreated.name}, with ${pkgs.length} packages`;
+  }
+
+  filterPackagesByDomain(pkgs: PackageLock['packages']) {
+    const pattern = new RegExp(`http.*${this.domain}.*/.*`);
+    return Array.from(pkgs).filter(
+      ([, pkg]) => !this.domain || pattern.test(pkg.resolved)
+    );
+  }
+
+  async getPackage(
+    name: string,
+    version: string
+  ): Promise<undefined | PackageEntity> {
+    const key = `PKG#${name}#${version}`;
     try {
-      lockFile = await this.createLockFile(content, logger);
-    } catch (error: any) {
-      logger.error(`Cannot process content: ${error?.toString() || 'Unknown'}`);
+      const pkg = await this.model.get({ pk: key, sk: key });
+      return PackageEntity.fromDocument(pkg);
+    } catch (err: unknown) {
       return;
     }
+  }
 
-    const domain = process.env.DOMAIN;
-    if (domain) logger.log(`Filter for domain: ${domain}`);
-    else logger.log('No domain provided, check ALL dependencies');
-
-    const pattern = new RegExp(`http.*${domain}.*/.*`);
-
-    // BUG: may violate package checksum unique constraint
-    // If multiple lambdas spawn at the same time, all of them may create its
-    // own 'instance' of the package with the same checksum
-    // fix: use another dynamodb table as 'lock' primitives
-
-    lockFile = this.removeNodeModulePrefix(lockFile);
-    const packages = await Promise.all(
-      Array.from(lockFile.packages)
-        // Save only package matching domain, only if domain is defined
-        .filter(([, pkg]) => !domain || pattern.test(pkg.resolved))
-        .map(async ([name, pkg]) => {
-          const packagesFound: Document<Package>[] = await this.pkg
-            .query()
-            .where('checksum')
-            .eq(pkg.integrity.trim())
-            .exec();
-
-          if (packagesFound.length > 1) {
-            logger.error(`Checksum collision: ${name}@${pkg.version}`);
-          }
-
-          const packageFound = packagesFound[0];
-
-          if (packageFound) {
-            logger.log(`Found package in database: ${packageFound.name}`);
-            return packageFound.id;
-          }
-
-          const pkgIdentifier = `${name}@${pkg.version}`;
-          logger.log(`Creating ${pkgIdentifier}`);
-          const savedPkg: Document<Package> = await this.pkg.create({
-            name: name.trim(),
-            checksum: pkg.integrity.trim(),
-            url: pkg.resolved.trim(),
-            version: pkg.version.trim(),
-            createdAt: new Date(),
-          });
-          logger.log(`Created ${pkgIdentifier}`);
-
-          return savedPkg.id;
-        }),
-    );
-    logger.log(`Processed ${packages?.length || 0} packages`);
-
-    // TODO: find other ways beside harcoding github
-    const name = `${repository.owner}/${repository.name}`;
-    const url = `https://github.com/${name}`;
-
-    const [project] = await this.prj.query().where('url').eq(url).exec();
-
-    if (project) {
-      const { id, ...data } = project;
-      await this.prj.update(
-        { id },
-        {
-          ...data,
-          url,
-          packages: packages as any,
-          name,
-        },
-      );
-    } else {
-      await this.prj.create({
-        url,
-        packages: packages as any,
-        name,
+  async getProject(prjId: string): Promise<undefined | ProjectEntity> {
+    try {
+      const prj = await this.model.get({
+        pk: prjId,
+        sk: prjId,
       });
+      return ProjectEntity.fromDocument(prj);
+    } catch (err: unknown) {
+      return;
     }
+  }
 
-    if (project) logger.log('Updated existing project');
-    else logger.log('New project with dependencies created');
+  async createPackage(name: string, pkg: PkgMeta) {
+    const key = `PKG#${name}#${pkg.version}`;
+    const pkgEntity = await this.model.create({
+      pk: key,
+      sk: key,
+      type: EntityType.Package,
+      name,
+      version: pkg.version,
+      url: pkg.resolved,
+      checksum: pkg.integrity,
+    });
+    return PackageEntity.fromDocument(pkgEntity);
+  }
 
-    return project
-      ? `Updated project ${name}, ${packages.length} updated`
-      : `Created project ${name}, ${packages.length} added`;
+  async createProject(name: string, url: string, pkgIds: string[]) {
+    const key = `PRJ#${name}`;
+    const project = await this.model.create({
+      pk: key,
+      sk: key,
+      type: EntityType.Project,
+      url,
+      name,
+    });
+    await Promise.all(
+      pkgIds.map((pkgId) =>
+        this.model.create({
+          pk: key,
+          sk: pkgId,
+        })
+      )
+    );
+    return ProjectEntity.fromDocument(project);
+  }
+
+  async deleteProject(prjId: string) {
+    const prjEntries = await this.model
+      .query('pk')
+      .eq(prjId)
+      .all(100)
+      .attributes(['pk', 'sk'])
+      .exec();
+    let deletions = await Promise.all(
+      chunk(prjEntries, 25).map((entries) =>
+        this.model.batchDelete(
+          entries.map((e) => ({
+            pk: e.pk,
+            sk: e.sk,
+          }))
+        )
+      )
+    );
+    while (deletions.length < 0) {
+      deletions = await Promise.all(
+        chunk(deletions.map((d) => d.unprocessedItems).flat(), 25).map((e) =>
+          this.model.batchDelete(e)
+        )
+      );
+    }
   }
 
   /** Filter out things prefixed with node_modules */

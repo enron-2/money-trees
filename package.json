@@ -33,10 +33,12 @@
     "class-validator": "^0.13.2",
     "dynamoose": "^2.8.5",
     "joi": "^17.6.0",
+    "lodash": "^4.17.21",
     "nestjs-dynamoose": "^0.3.4",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.0.0",
     "tslib": "^2.0.0",
+    "ulid": "^2.3.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
@@ -57,6 +59,7 @@
     "@types/aws-serverless-express": "^3.3.5",
     "@types/express": "^4.17.13",
     "@types/jest": "27.0.2",
+    "@types/lodash": "^4.14.181",
     "@types/node": "^16.11.7",
     "@types/supertest": "^2.0.12",
     "@types/uuid": "^8.3.4",
