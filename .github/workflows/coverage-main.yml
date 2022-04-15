@@ -35,6 +35,8 @@ jobs:
           node-version: '14'
       - name: Installing dependencies
         run: npm ci
+      - name: Seed database
+        run: npm run seed
       - name: Run tests
         env:
           AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
