@@ -6,7 +6,7 @@ const env: Environment = {
 };
 const app = new App();
 
-for (const stageName of ['Sta', 'Prd']) {
+for (const stageName of ['Sta' /*, 'Prd' */]) {
   const database = new DatabaseStack(app, `${stageName}Database`, { env });
   new HttpStack(app, `${stageName}Http`, { env, database, stageName });
   new ParserStack(app, `${stageName}Parser`, { env, database, stageName });

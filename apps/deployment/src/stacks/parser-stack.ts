@@ -46,7 +46,7 @@ export class ParserStack extends Stack {
 
     const bucket = new s3.Bucket(this, `LockFileBucket`, {
       // TODO: handle access control to allow uploads from certain sources
-      bucketName: `lock-file-bucket-${props.stageName}`,
+      bucketName: `lock-file-bucket-${props.stageName.toLowerCase()}`,
     });
     bucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,

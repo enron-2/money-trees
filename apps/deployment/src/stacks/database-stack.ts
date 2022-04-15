@@ -1,6 +1,6 @@
 import { Construct, Stack, StackProps } from '@aws-cdk/core';
 import { IGrantable } from '@aws-cdk/aws-iam';
-import { AttributeType, Table } from '@aws-cdk/aws-dynamodb';
+import { AttributeType, BillingMode, Table } from '@aws-cdk/aws-dynamodb';
 import { GSI, TableName } from '@constants';
 
 export class DatabaseStack extends Stack {
@@ -10,9 +10,14 @@ export class DatabaseStack extends Stack {
     super(scope, id, props);
     this.table = new Table(this, `${id}${TableName}`, {
       partitionKey: {
-        name: 'id',
+        name: 'pk',
         type: AttributeType.STRING,
       },
+      sortKey: {
+        name: 'sk',
+        type: AttributeType.STRING,
+      },
+      billingMode: BillingMode.PAY_PER_REQUEST,
     });
     this.table.addGlobalSecondaryIndex({
       indexName: GSI.Inverse,
