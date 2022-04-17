@@ -9,6 +9,7 @@ exports.handler = async (event) => {
   const { SecretString: AWS_ACCESS_KEY_ID } = await secretsManager
     .getSecretValue({ SecretId: 'AWS_ACCESS_KEY_ID' })
     .promise();
+
   cp.exec(`export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}`);
 
   const { SecretString: AWS_SECRET_ACCESS_KEY } = await secretsManager
@@ -27,18 +28,24 @@ exports.handler = async (event) => {
     stderr: aws.stderr.toString(),
   };
 
-  /* git activity to get file */
-  const makeDirectory = `mkdir -p ${event.downloadLocation}`;
-  const downloadDirectory = `cd ${event.downloadLocation}`;
-  const removeIfDirExists = `rm -rf *`;
-  const gitDownload = `wget --header='Authorization: token ${event.gitToken}' https://api.github.com/repos/${event.gitOwner}/${event.gitRepoName}/tarball/main' && mkdir ${gitRepoName} && tar xzf main -C ${gitRepoName} --strip-components 1`;
-  const cdToDownload = `cd ${event.gitRepoName}`;
+  /* ensure entry to empty directory */
+  const entryToDownloadLocation = `mkdir -p ${event.downloadLocation} && cd ${event.downloadLocation} && rm -rf *`;
+  let entryLocation = cp.spawnSync(entryToDownloadLocation.split(' '));
+  entryLocation = {
+      stdout: entryLocation.stdout.toString(),
+      stderr: entryLocation.stderr.toString(), 
+  }
 
-  cp.exec(makeDirectory);
-  cp.exec(downloadDirectory);
-  cp.exec(removeIfDirExists);
-  cp.exec(gitDownload);
-  cp.exec(cdToDownload);
+  /* git activity to get package */
+  const gitDownload = `wget --header='Authorization: token ${event.gitToken}' https://api.github.com/repos/${event.gitOwner}/${event.gitRepoName}/tarball/main' && mkdir ${gitRepoName} && tar xzf main -C ${gitRepoName} --strip-components 1 && cd ${event.gitRepoName}`;
+  let entryGitDownload = cp.spawnSync(gitDownload.split(' '))
+  entryGitDownload = {
+    stdout: entryGitDownload.stdout.toString(),
+    stderr: entryGitDownload.stderr.toString(),
+
+  }
+
+  /* publish package */
   let npm = cp.spawnSync('npm', ['publish']);
   npm = {
     stdout: npm.stdout.toString(),
@@ -46,6 +53,6 @@ exports.handler = async (event) => {
   };
   return {
     statusCode: 200,
-    body: JSON.stringify({ aws, npm }),
+    body: JSON.stringify({ aws, entryLocation, entryGitDownload, npm }),
   };
 };
