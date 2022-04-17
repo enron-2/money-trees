@@ -17,6 +17,7 @@ interface HookStackProps extends StackProps {
 
 export class HookStack extends Stack {
   pipelineLinkerApiURL: string;
+  codeartifactUploadURL: string;
   constructor(scope: Construct, id: string, props: HookStackProps) {
     super(scope, id, props);
 
@@ -44,6 +45,46 @@ export class HookStack extends Stack {
         PARSER_LAMBDA: props.parserLambdaName,
       },
     });
+
+    // codeArtifactDocker
+    // TODO change the directory?
+    const codeArtifactDockerAppPath = join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'hooks',
+      'pipeline',
+      'code-artifact-docker'
+    );
+
+    const codeArtifactDocker = new lambda.DockerImageFunction(
+      this,
+      'codeartifact-docker',
+      {
+        functionName: 'codeArtifactDocker',
+        code: lambda.DockerImageCode.fromImageAsset(codeArtifactDockerAppPath, {
+          cmd: ['index.js'], // not sure about this
+          entrypoint: ['/lambda-entrypoint.sh'],
+        }),
+        timeout: Duration.seconds(90),
+        memorySize: 2048,
+      }
+    );
+
+    const uploadCodeArtifactIntegration = new apiGw.LambdaRestApi(
+      this,
+      'upload-codeartifact-api',
+      {
+        handler: codeArtifactDocker,
+      }
+    );
+
+    new CfnOutput(this, 'API URL', {
+      value: uploadCodeArtifactIntegration.url ?? 'ERROR: No URL allocated',
+    });
+
+    this.codeartifactUploadURL = uploadCodeArtifactIntegration.url;
 
     const pipelineApi = new apiGw.LambdaRestApi(this, 'RESTEndpoint', {
       handler: pipelineLambda,

@@ -13,7 +13,7 @@ interface RepoProps {
   git_url: string;
 }
 
-interface GithubWebhookPushEvent extends APIGatewayEvent {
+export interface GithubWebhookPushEvent extends APIGatewayEvent {
   ref: string | undefined;
   repository?: RepoProps;
 }
@@ -22,7 +22,6 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
   const { SecretString: token } = await secretsManager
     .getSecretValue({ SecretId: 'GITHUB_TOKEN' })
     .promise();
-  const octokit = new Octokit({ auth: token });
 
   const orgName = event.repository.owner.name;
   const repoName = event.repository.name;
@@ -41,17 +40,24 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
     return { statusCode: 400, body: 'Not a main branch' };
 
   if (isPackage) {
-    // TODO: CA
+    // upload to repository to Code Artifact
     const gitUrl = event.repository.git_url;
     const location = `/tmp/${repoName}-${Date.now()}`;
-    exec(`git clone ${gitUrl} ${location}`);
-    exec(`cd ${location}`);
-    exec(
-      'aws codeartifact login --tool npm --repository demo-repo --domain domain-demo'
-    );
-    exec('npm publish');
+
+    /* TODO call lambda with the below payloads */
+
+    /* 
+      codeArtifactDomain: orgname
+      codeArtifactRepo: private_orgname
+      codeArtifactNamespace: orgname
+      gitRepo: gitUrl,
+      gitToken: token,
+      downloadLocation: location,
+    */
   } else {
     // parse package-lock.json
+
+    const octokit = new Octokit({ auth: token });
     const resp = await octokit.rest.repos.getContent({
       owner: orgName,
       repo: repoName,
