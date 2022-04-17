@@ -3,10 +3,10 @@ import { Owasp } from './owasp';
 import { Sonarqube } from './sonarqube';
 
 export interface IssuesType {
-    package: string,
-    version: string,
     severity: string,
-    desc: string
+    description: string,
+    location: string,
+    info: string
 }
 
 export const children = {
@@ -20,7 +20,7 @@ export class Scanner {
 
     build = (child : string) => new children[child]()
 
-    run = () => {}
+    run = () => [];
 
     cleanup = () => {}
 }

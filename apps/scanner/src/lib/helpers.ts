@@ -31,10 +31,14 @@ export const fetch_from_s3 = async (bucket : BucketType) => {
 	}
 }
 
-export const publish = () => {
+export const fetch_repo = async (repoName : string) => {
+    // TODO: download the repository to /tmp/repo
+}
 
+export const publish = () => {
+    // TODO: upload the package to CodeArtifact
 }
 
 export const addIssues = (issues : IssuesType[]) => {
-    
+    // TODO: push those issues to the database
 }

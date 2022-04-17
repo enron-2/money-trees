@@ -26,7 +26,7 @@ export class Controller {
 	}
 
 	scan = () => {
-		const issues : IssuesType[] = this.scanners.map(
+		const issues : IssuesType[][] = this.scanners.map(
 			(scanner : Scanner) => scanner.run()
 		);
 
@@ -41,6 +41,7 @@ export class Controller {
 		this.scanners.forEach(
 			(scanner : Scanner) => scanner.cleanup()
 		);
+
 		execSync(`rm -rf ./tmp/repo/* ./tmp/scanners/*`)
 	}
 }

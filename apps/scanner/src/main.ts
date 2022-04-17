@@ -1,10 +1,10 @@
-import { Controller } from './controller';
+import { Controller } from './lib/controller';
 import { IssuesType } from './lib/scanners/scanner';
 import { publish, addIssues } from './lib/helpers';
 
 interface ResultType {
     success: boolean,
-    issues: IssuesType[]
+    issues?: IssuesType[]
 }
 
 exports.handler = async (event : any) => {
@@ -20,7 +20,6 @@ exports.handler = async (event : any) => {
     controller.clean();
 
     return {
-        statusCode: 200,
-        body: JSON.stringify(resp)
+        statusCode: 200
     }
 }
