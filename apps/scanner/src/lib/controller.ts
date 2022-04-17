@@ -1,11 +1,6 @@
 import { fetch_from_s3, client } from './helpers';
 import { execSync } from 'child_process';
-import { Scanner } from './scanners/scanner';
-
-interface IssuesType {
-	pkgName: string,
-	pkgVers: string
-}
+import { Scanner, IssuesType } from './scanners/scanner';
 
 export class Controller {
 	scanners : Array<Scanner>;
@@ -19,18 +14,14 @@ export class Controller {
 			await fetch_from_s3({ Bucket: 'e2', Key: 'config' })
 		);
 
-		this.scanners = config.scanners.map(
-			(scanner : string) => this.setup(scanner)
-		);
+		this.scanners = await this.setup(config.scanners);
 
 		return this;
 	}
 
-	setup = (scanner : string) => {
-		const scanner : Scanner = 
-
-		this.scanners.forEach(
-			(scanner : Scanner) => scanner.setup()
+	setup = async (scanners : string[]) => {
+		return scanners.map(
+			async (scanner : string) => await new Scanner().build(scanner)
 		);
 	}
 

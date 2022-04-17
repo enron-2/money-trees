@@ -1,13 +1,9 @@
 import { Controller } from './controller';
+import { IssuesType } from './scanners/scanner';
 
 interface ResultType {
     success: boolean,
     issues: IssuesType[]
-}
-
-interface IssuesType {
-    pkgName: string,
-    pkgVers: string
 }
 
 const publish = () => {
