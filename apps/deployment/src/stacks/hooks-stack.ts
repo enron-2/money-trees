@@ -17,7 +17,6 @@ interface HookStackProps extends StackProps {
 
 export class HookStack extends Stack {
   pipelineLinkerApiURL: string;
-  codeartifactUploadURL: string;
   constructor(scope: Construct, id: string, props: HookStackProps) {
     super(scope, id, props);
 
