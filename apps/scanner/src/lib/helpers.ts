@@ -1,4 +1,5 @@
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3"; // AbortMultipartUploadCommand ??
+import { IssuesType } from './scanners/scanner';
 
 let s3_client : S3Client;
 
@@ -28,4 +29,12 @@ export const fetch_from_s3 = async (bucket : BucketType) => {
 	} finally {
 		console.log('hello');
 	}
+}
+
+export const publish = () => {
+
+}
+
+export const addIssues = (issues : IssuesType[]) => {
+    
 }

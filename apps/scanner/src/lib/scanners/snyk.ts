@@ -2,7 +2,10 @@ import { Scanner, IssuesType } from './scanner';
 import { execSync, spawn } from 'child_process';
 
 export class Snyk extends Scanner {
-    Snyk() { execSync('npm install snykcli -g') }
+    constructor() {
+        super();
+        execSync('npm install snykcli -g')
+    }
 
     run = () => {
         let issues : IssuesType[] = [];

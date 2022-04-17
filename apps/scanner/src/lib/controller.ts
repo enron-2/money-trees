@@ -1,5 +1,5 @@
-import { fetch_from_s3, client } from './helpers';
 import { execSync } from 'child_process';
+import { fetch_from_s3, client } from './helpers';
 import { Scanner, IssuesType } from './scanners/scanner';
 
 export class Controller {
@@ -21,7 +21,7 @@ export class Controller {
 
 	setup = async (scanners : string[]) => {
 		return scanners.map(
-			async (scanner : string) => await new Scanner().build(scanner)
+			(scanner : string) => new Scanner().build(scanner)
 		);
 	}
 
