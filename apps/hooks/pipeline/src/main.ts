@@ -45,7 +45,7 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
     const location = `/tmp/${repoName}-${Date.now()}`;
 
     /* call lambda with the below payloads to upload to code artifact */
-    const lambdaName = 'codeArtifactDocker';
+    const lambdaName = process.env.CODE_ARTIFACT_UPLOAD_LAMBDA;
     new Lambda({}).invoke({
       FunctionName: lambdaName,
       Payload: JSON.stringify({

@@ -17,9 +17,46 @@ interface HookStackProps extends StackProps {
 
 export class HookStack extends Stack {
   pipelineLinkerApiURL: string;
-  codeartifactUploadURL: string;
+
   constructor(scope: Construct, id: string, props: HookStackProps) {
     super(scope, id, props);
+
+    // codeArtifactDocker
+    // change the directory?
+    const codeArtifactDockerAppPath = join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'hooks',
+      'pipeline',
+      'code-artifact-docker'
+    );
+
+    const codeArtifactDocker = new lambda.DockerImageFunction(
+      this,
+      'codeartifact-docker',
+      {
+        functionName: 'codeArtifactDocker',
+        code: lambda.DockerImageCode.fromImageAsset(codeArtifactDockerAppPath, {
+          entrypoint: ['/lambda-entrypoint.sh'],
+        }),
+        timeout: Duration.seconds(90),
+        memorySize: 8192,
+      }
+    );
+
+    const uploadCodeArtifactIntegration = new apiGw.LambdaRestApi(
+      this,
+      'upload-codeartifact-api',
+      {
+        handler: codeArtifactDocker,
+      }
+    );
+
+    new CfnOutput(this, 'API URL codeartifact lambda', {
+      value: uploadCodeArtifactIntegration.url ?? 'ERROR: No URL allocated',
+    });
 
     // Pipeline
     const pipelineAppPath = join(
@@ -43,50 +80,13 @@ export class HookStack extends Stack {
       environment: {
         BACKEND_URL: props.backendURL,
         PARSER_LAMBDA: props.parserLambdaName,
+        CODE_ARTIFACT_UPLOAD_LAMBDA: codeArtifactDocker.functionName,
       },
-    });
-
-    // codeArtifactDocker
-    // change the directory?
-    const codeArtifactDockerAppPath = join(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      'hooks',
-      'pipeline',
-      'code-artifact-docker'
-    );
-
-    const codeArtifactDocker = new lambda.DockerImageFunction(
-      this,
-      'codeartifact-docker',
-      {
-        functionName: 'codeArtifactDocker',
-        code: lambda.DockerImageCode.fromImageAsset(codeArtifactDockerAppPath, {
-          // cmd: [''], // not sure about this
-          entrypoint: ['/lambda-entrypoint.sh'],
-        }),
-        timeout: Duration.seconds(90),
-        memorySize: 8192,
-      }
-    );
-
-    const uploadCodeArtifactIntegration = new apiGw.LambdaRestApi(
-      this,
-      'upload-codeartifact-api',
-      {
-        handler: codeArtifactDocker,
-      }
-    );
-
-    new CfnOutput(this, 'API URL codeartifact lambda', {
-      value: uploadCodeArtifactIntegration.url ?? 'ERROR: No URL allocated',
     });
 
     const pipelineApi = new apiGw.LambdaRestApi(
       this,
-      'RESTEndpoint codeartifact lambda',
+      'RESTEndpoint Pipeline Lambda',
       {
         handler: pipelineLambda,
         proxy: true,
