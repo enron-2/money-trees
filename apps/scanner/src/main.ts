@@ -1,4 +1,4 @@
-import { scanner } from './lib/runner';
+import { scanner } from './lib/badname';
 
 exports.handler = async (event : any) => {
     const resp = scanner(event);
