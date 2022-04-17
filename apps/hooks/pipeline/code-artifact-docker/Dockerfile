@@ -16,9 +16,9 @@ RUN npm ci
 COPY .  ${LAMBDA_TASK_ROOT}
 
 # Use secrets manager or other ways to grant access to CA
-ENV AWS_ACCESS_KEY_ID=
-ENV AWS_SECRET_ACCESS_KEY=
-ENV AWS_DEFAULT_REGION=
+# ENV AWS_ACCESS_KEY_ID=
+# ENV AWS_SECRET_ACCESS_KEY=
+# ENV AWS_DEFAULT_REGION=
 
 # Entrypoint
 CMD [ "index.handler" ]

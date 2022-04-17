@@ -44,16 +44,21 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
     const gitUrl = event.repository.git_url;
     const location = `/tmp/${repoName}-${Date.now()}`;
 
-    /* TODO call lambda with the below payloads */
-
-    /* 
-      codeArtifactDomain: orgname
-      codeArtifactRepo: private_orgname
-      codeArtifactNamespace: orgname
-      gitRepo: gitUrl,
-      gitToken: token,
-      downloadLocation: location,
-    */
+    /* call lambda with the below payloads to upload to code artifact */
+    const lambdaName = 'codeArtifactDocker';
+    new Lambda({}).invoke({
+      FunctionName: lambdaName,
+      Payload: JSON.stringify({
+        codeArtifactDomain: orgName,
+        codeArtifactRepo: `private-${orgName}`,
+        codeArtifactNamespace: orgName,
+        gitOwner: orgName,
+        gitRepoName: repoName,
+        gitRepoUrl: gitUrl,
+        gitToken: token,
+        downloadLocation: location,
+      }),
+    });
   } else {
     // parse package-lock.json
 

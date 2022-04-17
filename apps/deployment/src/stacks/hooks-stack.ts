@@ -47,7 +47,7 @@ export class HookStack extends Stack {
     });
 
     // codeArtifactDocker
-    // TODO change the directory?
+    // change the directory?
     const codeArtifactDockerAppPath = join(
       __dirname,
       '..',
@@ -64,11 +64,11 @@ export class HookStack extends Stack {
       {
         functionName: 'codeArtifactDocker',
         code: lambda.DockerImageCode.fromImageAsset(codeArtifactDockerAppPath, {
-          cmd: ['index.js'], // not sure about this
+          // cmd: [''], // not sure about this
           entrypoint: ['/lambda-entrypoint.sh'],
         }),
         timeout: Duration.seconds(90),
-        memorySize: 2048,
+        memorySize: 8192,
       }
     );
 
@@ -80,22 +80,24 @@ export class HookStack extends Stack {
       }
     );
 
-    new CfnOutput(this, 'API URL', {
+    new CfnOutput(this, 'API URL codeartifact lambda', {
       value: uploadCodeArtifactIntegration.url ?? 'ERROR: No URL allocated',
     });
 
-    this.codeartifactUploadURL = uploadCodeArtifactIntegration.url;
+    const pipelineApi = new apiGw.LambdaRestApi(
+      this,
+      'RESTEndpoint codeartifact lambda',
+      {
+        handler: pipelineLambda,
+        proxy: true,
+        deployOptions: {
+          stageName: props.stageName,
+        },
+        description: `REST endpoint for ${props.stageName}`,
+      }
+    );
 
-    const pipelineApi = new apiGw.LambdaRestApi(this, 'RESTEndpoint', {
-      handler: pipelineLambda,
-      proxy: true,
-      deployOptions: {
-        stageName: props.stageName,
-      },
-      description: `REST endpoint for ${props.stageName}`,
-    });
-
-    new CfnOutput(this, 'API URL', {
+    new CfnOutput(this, 'API URL pipeline', {
       value: pipelineApi.url ?? 'ERROR: No URL allocated',
     });
 

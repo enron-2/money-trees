@@ -30,7 +30,6 @@ for (const stageName of ['Sta' /*, 'Prd' */]) {
     parserLambdaName,
   });
   const pipelineSetupURL = hooks.pipelineLinkerApiURL;
-  const codeartifactUploadURL = hooks.codeartifactUploadURL;
 
   // TODO: add frontend, passing in backendURL, pipelineSetupURL
 }
