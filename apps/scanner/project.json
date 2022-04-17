@@ -10,6 +10,7 @@
         "outputPath": "dist/apps/scanner",
         "main": "apps/scanner/src/main.ts",
         "tsConfig": "apps/scanner/tsconfig.app.json",
+        "generatePackageJson": true,
         "assets": ["apps/scanner/src/assets"]
       },
       "configurations": {

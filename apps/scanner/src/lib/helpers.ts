@@ -8,7 +8,7 @@ export const client = (region? : string) =>
         region: region,
         credentials: {
             accessKeyId: process.env.ACCESS_KEY_ID,
-            secretAccessKey: process.env.SECRET_ACCESS_KEY
+            secretAccessKey: process.env.SECRET_KEY
         }})
     : s3_client;
 
@@ -18,7 +18,7 @@ interface BucketType {
 }
 
 export const fetch_from_s3 = async (bucket : BucketType) => {
-	const command = new GetObjectCommand({ Bucket: `e2/${bucket.Bucket}`, Key: `${bucket.Key}.zip` })
+	const command = new GetObjectCommand({ Bucket: `e2/${bucket.Bucket}`, Key: bucket.Key })
 
 	try {
 		const response = await client().send(command);
