@@ -22,7 +22,7 @@ export class Snyk extends Scanner {
                 issues.push({ severity: sev, description: desc, location: "dependency", info: `the dependency ${info} is insecure.` });
             }
         });
-    
+     
         return issues;
     }
 

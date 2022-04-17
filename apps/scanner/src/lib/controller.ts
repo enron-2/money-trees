@@ -26,8 +26,9 @@ export class Controller {
 	}
 
 	scan = () => {
-		const issues : IssuesType[][] = this.scanners.map(
-			(scanner : Scanner) => scanner.run()
+		let issues : IssuesType[];
+		this.scanners.forEach(
+			(scanner : Scanner) => issues.concat(scanner.run())
 		);
 
 		return {

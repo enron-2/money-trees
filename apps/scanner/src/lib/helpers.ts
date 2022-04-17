@@ -19,15 +19,14 @@ interface BucketType {
 }
 
 export const fetch_from_s3 = async (bucket : BucketType) => {
-	const command = new GetObjectCommand({ Bucket: `e2/${bucket.Bucket}`, Key: bucket.Key })
+	const command = new GetObjectCommand(bucket)
 
 	try {
 		const response = await client().send(command);
 		return response.Body.toString();
 	} catch (error : any) {
-		console.error('fail');
-	} finally {
-		console.log('hello');
+		// TODO: fix this
+        console.error('fail');
 	}
 }
 
