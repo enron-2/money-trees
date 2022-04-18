@@ -20,6 +20,46 @@ export class HookStack extends Stack {
   constructor(scope: Construct, id: string, props: HookStackProps) {
     super(scope, id, props);
 
+    // codeArtifactDockerLambda
+    // change the directory?
+    const codeArtifactDockerLambdaAppPath = join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'hooks',
+      'pipeline',
+      'code-artifact-docker'
+    );
+
+    const codeArtifactDockerLambda = new lambda.DockerImageFunction(
+      this,
+      'codeartifact-docker',
+      {
+        functionName: 'codeArtifactDockerLambda',
+        code: lambda.DockerImageCode.fromImageAsset(
+          codeArtifactDockerLambdaAppPath,
+          {
+            entrypoint: ['/lambda-entrypoint.sh'],
+          }
+        ),
+        timeout: Duration.seconds(90),
+        memorySize: 8192,
+      }
+    );
+
+    const uploadCodeArtifactIntegration = new apiGw.LambdaRestApi(
+      this,
+      'RESTEndpoint upload-codeartifact-api',
+      {
+        handler: codeArtifactDockerLambda,
+      }
+    );
+
+    new CfnOutput(this, 'API URL codeartifact lambda', {
+      value: uploadCodeArtifactIntegration.url ?? 'ERROR: No URL allocated',
+    });
+
     // Pipeline
     const pipelineAppPath = join(
       __dirname,
@@ -42,19 +82,24 @@ export class HookStack extends Stack {
       environment: {
         BACKEND_URL: props.backendURL,
         PARSER_LAMBDA: props.parserLambdaName,
+        CODE_ARTIFACT_UPLOAD_LAMBDA: codeArtifactDockerLambda.functionName,
       },
     });
 
-    const pipelineApi = new apiGw.LambdaRestApi(this, 'RESTEndpoint', {
-      handler: pipelineLambda,
-      proxy: true,
-      deployOptions: {
-        stageName: props.stageName,
-      },
-      description: `REST endpoint for ${props.stageName}`,
-    });
+    const pipelineApi = new apiGw.LambdaRestApi(
+      this,
+      'RESTEndpoint Pipeline Lambda',
+      {
+        handler: pipelineLambda,
+        proxy: true,
+        deployOptions: {
+          stageName: props.stageName,
+        },
+        description: `REST endpoint for ${props.stageName}`,
+      }
+    );
 
-    new CfnOutput(this, 'API URL', {
+    new CfnOutput(this, 'API URL pipeline', {
       value: pipelineApi.url ?? 'ERROR: No URL allocated',
     });
 

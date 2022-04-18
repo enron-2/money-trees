@@ -19,6 +19,7 @@
   "dependencies": {
     "@aws-cdk/assert": "^1.127.0",
     "@aws-cdk/aws-apigateway": "^1.150.0",
+    "@aws-cdk/aws-codeartifact": "^1.150.0",
     "@aws-cdk/aws-dynamodb": "^1.150.0",
     "@aws-cdk/aws-s3": "^1.150.0",
     "@aws-cdk/aws-s3-notifications": "^1.150.0",
@@ -33,6 +34,8 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
     "dynamoose": "^2.8.5",
+    "jest-fetch-mock": "^3.0.3",
+    "jest-mock-extended": "^2.0.5",
     "joi": "^17.6.0",
     "lodash": "^4.17.21",
     "nestjs-dynamoose": "^0.3.4",
