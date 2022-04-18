@@ -33,7 +33,7 @@ npm-debug.log
 yarn-error.log
 testem.log
 /typings
-apps/hooks/pipeline/code-artifact-docker/index.js
+apps/hooks/pipeline/code-artifact-docker/index.ts
 
 # System Files
 .DS_Store
