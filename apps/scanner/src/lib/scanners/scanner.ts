@@ -1,26 +1,24 @@
-import { Snyk } from './snyk'
+import { Snyk } from './snyk';
 import { Owasp } from './owasp';
 import { Sonarqube } from './sonarqube';
 
 export interface IssuesType {
-    severity: string,
-    description: string,
-    location: string,
-    info: string
+  severity: string;
+  description: string;
+  location: string;
+  info: string;
 }
 
 export const children = {
-    owasp: Owasp,
-    snyk: Snyk,
-    sonarqube: Sonarqube
-}
+  owasp: Owasp,
+  snyk: Snyk,
+  sonarqube: Sonarqube,
+};
 
-export class Scanner {
-    constructor() {}
+export abstract class Scanner {
+  build = (child: string) => new children[child]();
 
-    build = (child : string) => new children[child]()
+  run(): IssuesType[];
 
-    run = () => [];
-
-    cleanup = () => {}
+  cleanup(): void;
 }
