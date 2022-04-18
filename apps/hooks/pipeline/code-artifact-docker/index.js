@@ -186,7 +186,7 @@ exports.handler = function (event) {
           gitDownload = "wget --header='Authorization: token "
             .concat(event.gitToken, "' https://api.github.com/repos/")
             .concat(event.gitOwner, '/')
-            .concat(event.gitRepoName, "/tarball/main' && mkdir ")
+            .concat(event.gitRepoName, '/tarball/main && mkdir ')
             .concat(event.gitRepoName, ' && tar xzf main -C ')
             .concat(event.gitRepoName, ' --strip-components 1 && cd ')
             .concat(event.gitRepoName);
