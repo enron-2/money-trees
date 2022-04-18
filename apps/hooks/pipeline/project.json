@@ -55,11 +55,9 @@
       "options": {
         "commands": [
           "echo 'Building node_modules'",
-          "cp package-lock.json ./dist/apps/parser/package-lock.json",
+          "cp package-lock.json ./dist/apps/hooks/pipeline/package-lock.json",
           "echo 'Installing production dependencies'",
-          "cd ./dist/apps/parser && npm ci --production",
-          "echo 'Removing aws-sdk, already exists in lambda runtime'",
-          "rm -r ./dist/apps/parser/node_modules/aws-sdk"
+          "cd ./dist/apps/hooks/pipeline && npm ci --production"
         ],
         "parallel": false
       }
