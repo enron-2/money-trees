@@ -10,7 +10,8 @@
           "nx run hooks-pipeline:clean-dist",
           "nx run hooks-pipeline:build:production",
           "nx run hooks-pipeline:node_modules",
-          "echo \"Bundle size: $(du -sh dist/apps/hooks/pipeline | cut -f1)\""
+          "echo \"Bundle size: $(du -sh dist/apps/hooks/pipeline | cut -f1)\"",
+          "tsc code-artifact-docker/index.ts"
         ],
         "parallel": false
       }
