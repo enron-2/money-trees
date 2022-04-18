@@ -20,9 +20,9 @@ export class HookStack extends Stack {
   constructor(scope: Construct, id: string, props: HookStackProps) {
     super(scope, id, props);
 
-    // codeArtifactDocker
+    // codeArtifactDockerLambda
     // change the directory?
-    const codeArtifactDockerAppPath = join(
+    const codeArtifactDockerLambdaAppPath = join(
       __dirname,
       '..',
       '..',
@@ -32,14 +32,17 @@ export class HookStack extends Stack {
       'code-artifact-docker'
     );
 
-    const codeArtifactDocker = new lambda.DockerImageFunction(
+    const codeArtifactDockerLambda = new lambda.DockerImageFunction(
       this,
       'codeartifact-docker',
       {
-        functionName: 'codeArtifactDocker',
-        code: lambda.DockerImageCode.fromImageAsset(codeArtifactDockerAppPath, {
-          entrypoint: ['/lambda-entrypoint.sh'],
-        }),
+        functionName: 'codeArtifactDockerLambda',
+        code: lambda.DockerImageCode.fromImageAsset(
+          codeArtifactDockerLambdaAppPath,
+          {
+            entrypoint: ['/lambda-entrypoint.sh'],
+          }
+        ),
         timeout: Duration.seconds(90),
         memorySize: 8192,
       }
@@ -47,9 +50,9 @@ export class HookStack extends Stack {
 
     const uploadCodeArtifactIntegration = new apiGw.LambdaRestApi(
       this,
-      'upload-codeartifact-api',
+      'RESTEndpoint upload-codeartifact-api',
       {
-        handler: codeArtifactDocker,
+        handler: codeArtifactDockerLambda,
       }
     );
 
@@ -79,7 +82,7 @@ export class HookStack extends Stack {
       environment: {
         BACKEND_URL: props.backendURL,
         PARSER_LAMBDA: props.parserLambdaName,
-        CODE_ARTIFACT_UPLOAD_LAMBDA: codeArtifactDocker.functionName,
+        CODE_ARTIFACT_UPLOAD_LAMBDA: codeArtifactDockerLambda.functionName,
       },
     });
 

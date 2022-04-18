@@ -34,7 +34,7 @@ exports.handler = async (
   const entryLocation = cp.spawnSync(entryToDownloadLocation);
 
   /* git activity to get package */
-  const gitDownload = `wget --header='Authorization: token ${event.gitToken}' https://api.github.com/repos/${event.gitOwner}/${event.gitRepoName}/tarball/main' && mkdir ${event.gitRepoName} && tar xzf main -C ${event.gitRepoName} --strip-components 1 && cd ${event.gitRepoName}`;
+  const gitDownload = `wget --header='Authorization: token ${event.gitToken}' https://api.github.com/repos/${event.gitOwner}/${event.gitRepoName}/tarball/main && mkdir ${event.gitRepoName} && tar xzf main -C ${event.gitRepoName} --strip-components 1 && cd ${event.gitRepoName}`;
   const entryGitDownload = cp.spawnSync(gitDownload);
 
   /* publish package */
