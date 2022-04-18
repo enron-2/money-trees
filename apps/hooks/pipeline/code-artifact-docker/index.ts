@@ -22,7 +22,7 @@ exports.handler = async (
     .promise();
   cp.exec(`export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}`);
 
-  const AWS_DEFAULT_REGION = 'ap-souteast2';
+  const AWS_DEFAULT_REGION = 'ap-southeast-2';
   cp.exec(`export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}`);
 
   /* login to codeartifact */

@@ -172,7 +172,7 @@ exports.handler = function (event) {
           cp.exec(
             'export AWS_SECRET_ACCESS_KEY='.concat(AWS_SECRET_ACCESS_KEY)
           );
-          AWS_DEFAULT_REGION = 'ap-souteast2';
+          AWS_DEFAULT_REGION = 'ap-southeast-2';
           cp.exec('export AWS_DEFAULT_REGION='.concat(AWS_DEFAULT_REGION));
           caCmd = 'aws codeartifact login --tool npm --domain '
             .concat(event.codeArtifactDomain, ' --repository ')
