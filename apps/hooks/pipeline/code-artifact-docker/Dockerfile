@@ -10,8 +10,6 @@ FROM public.ecr.aws/lambda/nodejs:14
 COPY --from=build /builder/aws ./aws
 RUN ./aws/install && rm -r ./aws
 
-COPY ./package*.json ./
-RUN npm ci
 COPY .  ${LAMBDA_TASK_ROOT}
 
 # Entrypoint
