@@ -1,19 +1,18 @@
 import { execSync } from 'child_process';
-import { fetch_from_s3, client } from './helpers';
+import { fetch_local } from './helpers';
 import { Scanner, IssuesType } from './scanners/scanner';
-import { GithubWebhookPushEvent, fetch_repo } from './fetcher';
 
 export class Controller {
   scanners: Array<Scanner>;
 
   // not part of the constructor as it needs to be async
-  build = async (event: GithubWebhookPushEvent) => {
-    client('ap-southeast-2');
-    const config = JSON.parse(
-      await fetch_from_s3({ Bucket: 'e2', Key: 'config' })
-    );
+  build = async () => {
+    // const config = JSON.parse(
+    //   await fetch_s3({ Bucket: 'e2', Key: 'config' })
+    // );
 
-    fetch_repo(event);
+    const config = fetch_local();
+
     this.scanners = await this.setup(config.scanners);
 
     return this;

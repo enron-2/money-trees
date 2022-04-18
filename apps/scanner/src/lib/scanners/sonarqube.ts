@@ -14,9 +14,7 @@ export class Sonarqube extends Scanner {
     );
   }
 
-  run = () => {
-    return [];
-  };
+  run = () => [];
 
   cleanup = () => execSync('rm -rf ../../tmp/scanners/sonarqube');
 }

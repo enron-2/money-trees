@@ -1,6 +1,7 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'; // AbortMultipartUploadCommand ??
 import { IssuesType } from './scanners/scanner';
 import { secrets } from './secrets';
+import config from '../assets/config.json';
 
 let s3_client: S3Client;
 
@@ -20,7 +21,11 @@ interface BucketType {
   Key: string;
 }
 
-export const fetch_from_s3 = async (bucket: BucketType) => {
+export const fetch_local = () => config;
+
+export const fetch_s3 = async (bucket: BucketType) => {
+  client();
+
   const command = new GetObjectCommand(bucket);
 
   try {
@@ -29,10 +34,6 @@ export const fetch_from_s3 = async (bucket: BucketType) => {
   } catch (error: any) {
     console.error('fail'); // TODO: fix this
   }
-};
-
-export const publish = () => {
-  // TODO: upload the package to CodeArtifact
 };
 
 const severity = {
