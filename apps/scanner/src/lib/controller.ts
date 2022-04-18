@@ -20,7 +20,7 @@ export class Controller {
   };
 
   setup = async (scanners: string[]) => {
-    return scanners.map((scanner: string) => new Scanner().build(scanner));
+    return scanners.map((scanner: string) => Scanner.build(scanner));
   };
 
   scan = () => {
@@ -36,7 +36,6 @@ export class Controller {
   // can this be a destructor? Do they exist in JS?
   clean = () => {
     this.scanners.forEach((scanner: Scanner) => scanner.cleanup());
-
     execSync(`rm -rf ./tmp/repo/* ./tmp/scanners/*`);
   };
 }

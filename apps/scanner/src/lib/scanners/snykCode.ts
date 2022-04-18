@@ -1,7 +1,7 @@
 import { Scanner, IssuesType } from './scanner';
 import { execSync, spawnSync } from 'child_process';
 
-export class Snyk extends Scanner {
+export class SnykCode extends Scanner {
   constructor() {
     super();
     execSync('npm install snykcli -g');
@@ -23,9 +23,8 @@ export class Snyk extends Scanner {
         info = /Info: (.+)/.exec(line)[1];
         issues.push({
           severity: sev,
-          description: desc,
+          description: `${desc}: ${info}`,
           location: loc,
-          info: info,
         });
       }
     });
