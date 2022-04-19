@@ -3,6 +3,7 @@
   "projects": {
     "constants": "libs/constants",
     "core": "libs/core",
+    "dashboard": "apps/dashboard",
     "deployment": "apps/deployment",
     "hooks-link-webhook": "apps/hooks/link-webhook",
     "hooks-pipeline": "apps/hooks/pipeline",
