@@ -1,40 +1,56 @@
-// import React, { useEffect } from "react";
+import { useEffect } from 'react';
 
-// import { Typography } from "@mui/material";
+import { Typography } from '@mui/material';
 
-// import axios from "axios";
-// const baseUrl = process.env.REACT_APP_API_HOST;
+import axios from 'axios';
+import { environment } from '../../../environments/environment';
 
-// export const CompletedStep = (props: { isNewVuln: boolean }) => {
-//   useEffect(() => {
-//     if (!props.isNewVuln) {
-//       axios
-//         .post(`${baseUrl}/vulns`, {})
-//         .then(function (response) {
-//           console.log(response);
-//         })
-//         .catch(function (error) {
-//           console.log(error);
-//         });
-//     }
-//   }, []);
+const baseUrl = environment.apiHost;
 
-//   return (
-//     <div
-//       style={{
-//         display: "flex",
-//         flexDirection: "column",
-//         justifyContent: "center",
-//         alignItems: "center",
-//         height: "300px",
-//       }}
-//     >
-//       <Typography>
-//         Welcome to Level Up! An e-commerce store for games.
-//       </Typography>
-//       <Typography style={{ paddingTop: "24px" }}>
-//         The following steps will guide you through setting up your account!
-//       </Typography>
-//     </div>
-//   );
-// };
+export const CompletedStep = (props: { isNewVuln: boolean; formData: any }) => {
+  useEffect(() => {
+    if (!props.isNewVuln) {
+      axios
+        .put(
+          `${baseUrl}/vulns/${encodeURIComponent(
+            props.formData.vulnId
+          )}/packages/${encodeURIComponent(props.formData.packageId)}`,
+          {}
+        )
+        .then(function (response) {
+          console.log(response);
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+    } else {
+      axios
+        .post(`${baseUrl}/vulns`, {
+          name: props.formData.name,
+          description: props.formData.description,
+          severity: props.formData.severity,
+          packageIds: props.formData.packageIds,
+        })
+        .then(function (response) {
+          console.log(response);
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+    }
+  }, []);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '300px',
+      }}
+    >
+      <Typography>Thanks for submitting the vulnerability!</Typography>
+    </div>
+  );
+};

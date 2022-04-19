@@ -1,111 +1,95 @@
-import React, { useEffect, useState } from 'react';
-// import { useForm, Controller, SubmitHandler } from 'react-hook-form';
+import React, { useState } from 'react';
 import {
-  //   Input,
-  //   Box,
   Dialog,
-  //   MenuItem,
-  //   Step,
-  //   Stepper,
-  //   StepLabel,
-  //   StepContent,
-  //   Button,
-  //   Typography,
-  //   List,
-  //   ListItem,
-  //   DialogActions,
-  //   DialogContent,
-  //   CircularProgress,
-  //   DialogTitle,
-  //   StepIcon,
+  Box,
+  Step,
+  Stepper,
+  StepLabel,
+  Button,
+  Typography,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
 } from '@mui/material';
-// import { getAllPackages } from '../../services/packages';
-// import axios from 'axios';
-// import Select, { SelectChangeEvent } from '@mui/material/Select';
-// import SeverityIcon from '../Global/SeverityIcon';
-// import { StepOne } from './StepOne';
-// import { StepTwo } from './StepTwo';
-// import { StepThree } from './StepThree';
-// import { CompletedStep } from './CompletedStep';
+import { StepOne } from './StepOne';
+import { StepTwo } from './StepTwo';
+import { StepThree } from './StepThree';
+import { CompletedStep } from './CompletedStep';
+import CloseIcon from '@mui/icons-material/Close';
 
-// const baseUrl = process.env.REACT_APP_API_HOST;
-
-// interface IFormInput {
-//   cve: string;
-//   title: string;
-//   description: string;
-//   severity: number;
-//   packageIds: [value: string];
-// }
+import { environment } from '../../../environments/environment';
 
 const ReportVulnDialog = (props: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
-  // const { control, handleSubmit } = useForm<IFormInput>();
+  const [isNewVuln, setIsNewVuln] = useState(true);
 
-  // const [packageData, setPackageData] = useState<any[]>([]);
+  const steps = ['Step 1', 'Step 2', 'Step 3'];
 
-  // const [packageList, setPackageList] = useState<string[]>([]);
+  const [activeStep, setActiveStep] = React.useState(0);
 
-  // const [isNewVuln, setIsNewVuln] = useState(true);
-
-  // const steps = ['Step 1', 'Step 2', 'Step 3'];
-
-  // const [loading, setLoading] = useState(true);
-
-  // const [activeStep, setActiveStep] = React.useState(0);
-
-  // const [formData, setFormData] = useState<any>({});
-
-  // const handleChange = (event: SelectChangeEvent<typeof packageList>) => {
-  //   const {
-  //     target: { value },
-  //   } = event;
-  //   setPackageList(typeof value === 'string' ? value.split(',') : value);
-  // };
-
-  // useEffect(() => {
-  //   if (props.open) {
-  //     getAllPackages()
-  //       .then((response: any) => {
-  //         setPackageData(response);
-  //         setLoading(false);
-  //       })
-  //       .catch((err: any) => {
-  //         console.log(err);
-  //         throw new Error('Unable to get package data.');
-  //       });
-  //   }
-  // }, [props.open]);
+  const [formData, setFormData] = useState<any>({});
 
   const handleClose = () => {
-    //   setActiveStep(0);
+    setActiveStep(0);
     props.setOpen(false);
   };
 
-  // const handleNext = () => {
-  //   setActiveStep((prevActiveStep) => prevActiveStep + 1);
-  // };
+  const handleNext = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  };
 
-  // const handleBack = () => {
-  //   setActiveStep((prevActiveStep) => prevActiveStep - 1);
-  // };
+  const handleBack = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+  };
 
-  // const getStepContent = (step: number) => {
-  //   switch (step) {
-  //     case 0:
-  //       return (
-  //         <StepOne setIsNewVuln={setIsNewVuln} setActiveStep={setActiveStep} />
-  //       );
-  //     case 1:
-  //       return <StepTwo isNewVuln={isNewVuln} setFormData={setFormData} />;
-  //     case 2:
-  //       return <StepThree isNewVuln={isNewVuln} setFormData={setFormData} />;
-  //     case 3:
-  //       return <CompletedStep isNewVuln={isNewVuln} />;
-  //   }
-  // };
+  const handleReset = () => {
+    setActiveStep(0);
+  };
+
+  const getStepContent = (step: number) => {
+    switch (step) {
+      case 0:
+        return (
+          <StepOne setIsNewVuln={setIsNewVuln} setActiveStep={setActiveStep} />
+        );
+      case 1:
+        return (
+          <StepTwo
+            isNewVuln={isNewVuln}
+            setFormData={setFormData}
+            formData={formData}
+          />
+        );
+      case 2:
+        return (
+          <StepThree
+            isNewVuln={isNewVuln}
+            setFormData={setFormData}
+            formData={formData}
+          />
+        );
+      case 3:
+        return <CompletedStep isNewVuln={isNewVuln} formData={formData} />;
+    }
+    return <CompletedStep isNewVuln={isNewVuln} formData={formData} />;
+  };
+
+  const getBackDisabled = () => {
+    switch (activeStep) {
+      case 0:
+        return true;
+      case 1:
+        return false;
+      case 2:
+        return false;
+      case 3:
+        return false;
+    }
+    return true;
+  };
 
   return (
     <Dialog
@@ -120,7 +104,16 @@ const ReportVulnDialog = (props: {
       maxWidth="md"
       fullWidth
     >
-      {/* <DialogTitle>Report Vulnerability</DialogTitle>
+      <DialogTitle>
+        <Box display="flex" alignItems="center">
+          <Box flexGrow={1}> Report Vulnerability </Box>
+          <Box>
+            <IconButton onClick={handleClose}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </Box>
+      </DialogTitle>
       <DialogContent>
         <Stepper activeStep={activeStep} alternativeLabel>
           {steps.map((stepz, index) => (
@@ -131,11 +124,21 @@ const ReportVulnDialog = (props: {
         </Stepper>
         <div> {getStepContent(activeStep)} </div>
       </DialogContent>
-
       <DialogActions>
-        {console.log(formData)}
-        <Button onClick={handleNext}> Next </Button>
-      </DialogActions> */}
+        <div style={{ flex: '1 0 0' }}>
+          {activeStep !== 0 && activeStep !== steps.length ? (
+            <Button disabled={getBackDisabled()} onClick={handleBack}>
+              Back
+            </Button>
+          ) : null}
+        </div>
+        {activeStep !== 0 && activeStep !== steps.length ? (
+          <Button onClick={handleNext}>Next</Button>
+        ) : null}
+        {activeStep === steps.length ? (
+          <Button onClick={handleReset}>Reset</Button>
+        ) : null}
+      </DialogActions>
     </Dialog>
   );
 };
