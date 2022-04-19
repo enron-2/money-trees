@@ -126,6 +126,7 @@ export class HookStack extends Stack {
         timeout: Duration.seconds(10),
         code: lambda.Code.fromAsset(linkPipelineAppPath),
         environment: {
+          ORG_NAME: 'cs9447-team2',
           WEBHOOK_URL: pipelineApi.url,
         },
       }

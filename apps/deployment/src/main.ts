@@ -31,5 +31,5 @@ for (const stageName of ['Sta' /*, 'Prd' */]) {
   });
   const pipelineSetupURL = hooks.pipelineLinkerApiURL;
 
-  // TODO: add frontend, passing in backendURL, pipelineSetupURL
+  // TODO: add frontend, passing in backendURL
 }
