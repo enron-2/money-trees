@@ -1,3 +1,4 @@
+import 'tslib';
 import { APIGatewayEvent, Handler } from 'aws-lambda';
 import { Octokit } from 'octokit';
 import { SecretsManager } from 'aws-sdk';
