@@ -5,6 +5,7 @@ import {
   ParserStack,
   HookStack,
   CodeArtifactStack,
+  DashboardStack,
 } from './stacks';
 
 const env: Environment = {
@@ -49,4 +50,6 @@ for (const stageName of ['Sta' /*, 'Prd' */]) {
     parserLambda,
     githubOrg: GithubOrgName,
   });
+
+  new DashboardStack(app, `${stageName}Dashboard`);
 }
