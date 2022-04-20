@@ -29,6 +29,10 @@ jobs:
   test:
     needs: lint
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+      AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      AWS_DEFAULT_REGION: ap-southeast-2
     steps:
       - uses: actions/checkout@v2
         with:
@@ -42,11 +46,9 @@ jobs:
           node-version: '14'
       - name: Installing dependencies
         run: npm ci
+      - name: Seed database
+        run: npm run seed
       - name: Run tests
-        env:
-          AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
-          AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-          AWS_DEFAULT_REGION: ap-southeast-2
         run: npx nx affected:test
       - name: Stopping dynamodb container
         run: docker-compose down

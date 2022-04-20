@@ -64,26 +64,11 @@ async function bootstrap() {
         `ERROR ${'='.repeat(process.stdout.columns - 'ERROR '.length)}`
       );
       console.log(error);
-      console.log('> Rolling back changes');
-      let scanPkg = await svc.pkg.scan().limit(10).exec();
-      let pkgCount = 0;
-      while (scanPkg?.length > 0) {
-        pkgCount += scanPkg.length;
-        await svc.pkg.batchDelete(scanPkg.map(({ id }) => ({ id })));
-        scanPkg = await svc.pkg.scan().limit(10).exec();
-      }
-      console.log(`> Deleted ${pkgCount} packages`);
-      let scanPrj = await svc.prj.scan().limit(10).exec();
-      let prjCount = 0;
-      while (scanPrj?.length > 0) {
-        prjCount += scanPrj.length;
-        await svc.prj.batchDelete(scanPrj.map(({ id }) => ({ id })));
-        scanPrj = await svc.pkg.scan().limit(10).exec();
-      }
-      console.log(`> Deleted ${prjCount} projects`);
       console.log(bars);
     }
   }
+
+  await svc.loadDefaultVulns();
 
   await app.close();
 }

@@ -71,7 +71,15 @@ async function bootstrap() {
     customfavIcon: '/assets/enron2.png',
   });
 
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: {
+        exposeUnsetFields: false,
+        excludeExtraneousValues: true,
+      },
+    })
+  );
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   await app.listen(3000);

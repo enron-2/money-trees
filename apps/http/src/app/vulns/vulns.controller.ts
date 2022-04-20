@@ -3,9 +3,7 @@ import {
   Controller,
   Delete,
   Get,
-  NotFoundException,
   Param,
-  ParseUUIDPipe,
   Post,
   Put,
   Query,
@@ -23,14 +21,17 @@ import {
 } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsInt, IsOptional, IsPositive } from 'class-validator';
-import { PackageDetailDto, PackageDto, VulnDto } from '../dto';
+import { IdExistsPipe, RegexPipe } from '@core/pipes';
+import { PackageDetailDto, PackageDto, PaginationDto, VulnDto } from '../dto';
 import { DtoConformInterceptor } from '../dto-conform.interceptor';
-import { PaginationDto } from '../query-service.abstract';
 import { CreateVulnInput, UpdateVulnInput } from './vulns.dto';
 import { VulnsService } from './vulns.service';
 
+const PkgIdPipe = new RegexPipe(/^PKG#/);
+const VlnIdPipe = new RegexPipe(/^VLN#/);
+
 class VulnSearchInputDto extends PartialType(
-  IntersectionType(OmitType(VulnDto, ['id', 'severity']), PaginationDto),
+  IntersectionType(OmitType(VulnDto, ['id', 'severity']), PaginationDto)
 ) {
   @ApiPropertyOptional({ minimum: 1 })
   @IsOptional()
@@ -53,30 +54,28 @@ export class VulnsController {
   @ApiOkResponse({ type: [VulnDto] })
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Get()
-  findAll(
-    @Query() { limit, lastKey, ...query }: VulnSearchInputDto,
+  async findAll(
+    @Query() { limit, lastKey, ...query }: VulnSearchInputDto
   ): Promise<VulnDto[]> {
-    return this.vulnsService.findAll(limit, lastKey, query);
+    const entities = await this.vulnsService.findAll(limit, lastKey, query);
+    return entities.map((e) => e.toPlain());
   }
 
   @ApiOperation({ summary: 'Vulnerability with given ID' })
   @ApiOkResponse({ type: VulnDto })
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Get(':id')
-  async findOne(
-    @Param('id', new ParseUUIDPipe()) id: string,
-  ): Promise<VulnDto> {
-    const res = await this.vulnsService.findOne(id);
-    if (!res) throw new NotFoundException();
-    return res;
+  async findOne(@Param('id', IdExistsPipe) id: string): Promise<VulnDto> {
+    return this.vulnsService.findOne(id).then((v) => v.toPlain());
   }
 
   @ApiOperation({ summary: 'Report new vulnerability' })
   @ApiCreatedResponse({ type: VulnDto })
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Post()
-  reportVuln(@Body() input: CreateVulnInput): Promise<VulnDto> {
-    return this.vulnsService.create(input);
+  async reportVuln(@Body() input: CreateVulnInput): Promise<VulnDto> {
+    const vln = await this.vulnsService.create(input);
+    return vln.toPlain();
   }
 
   @ApiOperation({ summary: 'Update vulnerability with given ID' })
@@ -84,9 +83,10 @@ export class VulnsController {
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Put(':id')
   updateVuln(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() input: UpdateVulnInput,
-  ): Promise<VulnDto> {
+    @Param('id', IdExistsPipe) id: string,
+    @Body()
+    input: UpdateVulnInput
+  ) {
     return this.vulnsService.update(id, input);
   }
 
@@ -97,8 +97,9 @@ export class VulnsController {
   @ApiOkResponse({ type: VulnDto })
   @UseInterceptors(new DtoConformInterceptor(VulnDto))
   @Delete(':id')
-  deleteVuln(@Param('id', new ParseUUIDPipe()) id: string): Promise<VulnDto> {
-    return this.vulnsService.delete(id);
+  async deleteVuln(@Param('id', IdExistsPipe) id: string): Promise<VulnDto> {
+    const vln = await this.vulnsService.delete(id);
+    return vln.toPlain();
   }
 
   @ApiOperation({
@@ -108,31 +109,31 @@ export class VulnsController {
   @UseInterceptors(new DtoConformInterceptor(PackageDto))
   @Get(':vulnId/packages')
   packagesAffectedByVuln(
-    @Param('vulnId', new ParseUUIDPipe()) vulnId: string,
-    @Query() { limit, lastKey }: PaginationDto,
+    @Param('vulnId', VlnIdPipe, IdExistsPipe) vulnId: string,
+    @Query() { limit, lastKey }: PaginationDto
   ): Promise<PackageDto[]> {
     return this.vulnsService.packagesAffected(vulnId, limit, lastKey);
   }
 
   @ApiOperation({ summary: 'Link 1 package to 1 vulnerability' })
-  @ApiOkResponse({ type: PackageDetailDto })
+  @ApiOkResponse({ description: 'Link successful' })
   @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
   @Put(':vulnId/packages/:packageId')
-  addVulnToPackage(
-    @Param('vulnId', new ParseUUIDPipe()) vulnId: string,
-    @Param('packageId', new ParseUUIDPipe()) packageId: string,
-  ): Promise<PackageDetailDto> {
-    return this.vulnsService.includePackage(vulnId, packageId);
+  async addVulnToPackage(
+    @Param('packageId', PkgIdPipe, IdExistsPipe) packageId: string,
+    @Param('vulnId', VlnIdPipe, IdExistsPipe) vulnId: string
+  ) {
+    await this.vulnsService.linkToPkg(packageId, vulnId);
   }
 
   @ApiOperation({ summary: 'Unlink 1 package to 1 vulnerability' })
-  @ApiOkResponse({ type: PackageDetailDto })
+  @ApiOkResponse({ description: 'Unlink successful' })
   @UseInterceptors(new DtoConformInterceptor(PackageDetailDto))
   @Delete(':vulnId/packages/:packageId')
-  removeVulnFromPackage(
-    @Param('vulnId', new ParseUUIDPipe()) vulnId: string,
-    @Param('packageId', new ParseUUIDPipe()) packageId: string,
-  ): Promise<PackageDetailDto> {
-    return this.vulnsService.excludePackage(vulnId, packageId);
+  async removeVulnFromPackage(
+    @Param('packageId', PkgIdPipe, IdExistsPipe) packageId: string,
+    @Param('vulnId', VlnIdPipe, IdExistsPipe) vulnId: string
+  ) {
+    await this.vulnsService.unlinkFromPkg(packageId, vulnId);
   }
 }

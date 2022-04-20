@@ -1,31 +1,35 @@
 import { App, Environment } from '@aws-cdk/core';
-import { DatabaseStack, HttpStack, ParserStack } from './stacks';
+import { DatabaseStack, HttpStack, ParserStack, HookStack } from './stacks';
 
 const env: Environment = {
   region: 'ap-southeast-2',
 };
 const app = new App();
 
-const stagingDb = new DatabaseStack(app, 'StagingDatabase', { env });
-new HttpStack(app, 'StagingHttpStack', {
-  env,
-  database: stagingDb,
-  stageName: 'staging',
-});
-new ParserStack(app, 'StagingParserStack', {
-  env,
-  database: stagingDb,
-  stageName: 'staging',
-});
+for (const stageName of ['Sta' /*, 'Prd' */]) {
+  const database = new DatabaseStack(app, `${stageName}Database`, { env });
 
-const prodDb = new DatabaseStack(app, 'ProdDatabase', { env });
-new HttpStack(app, 'ProdHttpStack', {
-  env,
-  database: prodDb,
-  stageName: 'prod',
-});
-new ParserStack(app, 'ProdParserStack', {
-  env,
-  database: prodDb,
-  stageName: 'prod',
-});
+  const backend = new HttpStack(app, `${stageName}Http`, {
+    env,
+    database,
+    stageName,
+  });
+  const backendURL = backend.apiURL;
+
+  const parser = new ParserStack(app, `${stageName}Parser`, {
+    env,
+    database,
+    stageName,
+  });
+  const parserLambdaName = parser.lambdaName;
+
+  const hooks = new HookStack(app, `${stageName}Hooks`, {
+    env,
+    stageName,
+    backendURL,
+    parserLambdaName,
+  });
+  const pipelineSetupURL = hooks.pipelineLinkerApiURL;
+
+  // TODO: add frontend, passing in backendURL
+}

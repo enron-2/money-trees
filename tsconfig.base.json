@@ -16,6 +16,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@constants": ["libs/constants/src/index.ts"],
       "@core/*": ["libs/core/src/*"],
       "@money-trees/http/*": ["apps/http/src/app/*"],
       "@money-trees/parser/*": ["apps/parser/src/app/*"],

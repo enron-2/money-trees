@@ -1,8 +1,12 @@
 {
   "version": 2,
   "projects": {
+    "constants": "libs/constants",
     "core": "libs/core",
+    "dashboard": "apps/dashboard",
     "deployment": "apps/deployment",
+    "hooks-link-webhook": "apps/hooks/link-webhook",
+    "hooks-pipeline": "apps/hooks/pipeline",
     "http": "apps/http",
     "parser": "apps/parser",
     "scanner": "apps/scanner",
