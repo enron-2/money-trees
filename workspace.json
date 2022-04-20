@@ -9,6 +9,7 @@
     "hooks-pipeline": "apps/hooks/pipeline",
     "http": "apps/http",
     "parser": "apps/parser",
+    "scanner": "apps/scanner",
     "schemas": "libs/schemas",
     "seeder": "apps/seeder"
   }
