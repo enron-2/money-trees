@@ -7,6 +7,8 @@ import {
 } from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apiGw from '@aws-cdk/aws-apigateway';
+import * as iam from '@aws-cdk/aws-iam';
+import * as ec2 from '@aws-cdk/aws-ec2';
 import { join } from 'path';
 
 interface HookStackProps extends StackProps {
@@ -21,7 +23,26 @@ export class HookStack extends Stack {
     super(scope, id, props);
 
     // codeArtifactDockerLambda
-    // change the directory?
+    // vpc for lambda
+    const vpc = new ec2.Vpc(this, 'my-cdk-vpc', {
+      cidr: '10.0.0.0/16',
+      natGateways: 1,
+      maxAzs: 3,
+      subnetConfiguration: [
+        {
+          name: 'private-subnet-1',
+          subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
+          cidrMask: 24,
+        },
+        {
+          name: 'public-subnet-1',
+          subnetType: ec2.SubnetType.PUBLIC,
+          cidrMask: 24,
+        },
+      ],
+    });
+
+    // the lambda
     const codeArtifactDockerLambdaAppPath = join(
       __dirname,
       '..',
@@ -37,6 +58,10 @@ export class HookStack extends Stack {
       'codeartifact-docker',
       {
         functionName: 'codeArtifactDockerLambda',
+        vpc,
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
+        },
         code: lambda.DockerImageCode.fromImageAsset(
           codeArtifactDockerLambdaAppPath,
           {
@@ -46,6 +71,13 @@ export class HookStack extends Stack {
         timeout: Duration.seconds(90),
         memorySize: 8192,
       }
+    );
+    // attach policy
+    codeArtifactDockerLambda.role.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('SecretsManagerReadWrite')
+    );
+    codeArtifactDockerLambda.role.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('AWSCodeArtifactAdminAccess')
     );
 
     const uploadCodeArtifactIntegration = new apiGw.LambdaRestApi(
