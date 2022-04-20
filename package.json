@@ -25,6 +25,7 @@
     "@aws-cdk/aws-codeartifact": "^1.150.0",
     "@aws-cdk/aws-dynamodb": "^1.150.0",
     "@aws-cdk/aws-s3": "^1.150.0",
+    "@aws-cdk/aws-s3-deployment": "^1.152.0",
     "@aws-cdk/aws-s3-notifications": "^1.150.0",
     "@aws-cdk/core": "^1.127.0",
     "@aws-sdk/client-s3": "^3.72.0",
