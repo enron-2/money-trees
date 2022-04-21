@@ -4,12 +4,13 @@ import { Handler } from 'aws-lambda';
 import { InvocationRequest } from 'aws-sdk/clients/lambda';
 import { ParserModule } from './app/parser.module';
 import { ParserService } from './app/parser.service';
+import { Octokit } from 'octokit';
 
 export type PayloadInterface = {
   /** b64 encoded or something idfk */
-  content: string;
   owner: string;
   repo: string;
+  token: string;
 };
 
 export const handler: Handler<InvocationRequest, string> = async (
@@ -20,7 +21,14 @@ export const handler: Handler<InvocationRequest, string> = async (
   parser.domain = process.env.DOMAIN;
 
   const payload: PayloadInterface = JSON.parse(event.Payload.toString());
-  const decoded = Buffer.from(payload.content, 'base64').toString('utf8');
+  const octokit = new Octokit({ auth: payload.token });
+  const resp = await octokit.rest.repos.getContent({
+    owner: payload.owner,
+    repo: payload.repo,
+    path: 'package-lock.json',
+  });
+  const content = (resp.data as any).content;
+  const decoded = Buffer.from(content, 'base64').toString('utf8');
 
   const lockFileContent = await parser.createLockFile(
     decoded,

@@ -3,6 +3,7 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import { DatabaseStack } from './database-stack';
 import { join } from 'path';
 import { NodeLambdaFunc } from '../constructs';
+import * as iam from '@aws-cdk/aws-iam';
 
 interface ParserStackProps extends StackProps {
   database: DatabaseStack;
@@ -40,6 +41,9 @@ export class ParserStack extends Stack {
 
     database.grantRead(parserLambda);
     database.grantWrite(parserLambda);
+    parserLambda.role.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess')
+    );
 
     // TODO: if stageName == prod
     // Add 'cognito' or some other auth method
