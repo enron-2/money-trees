@@ -68,20 +68,35 @@ export const StepTwo = (props: {
     >
       {props.isNewVuln ? (
         <div>
-          <Input placeholder="cve" onChange={handleNameChange} />
-          <Input placeholder="title" onChange={handleTitleChange} />
-          <Input placeholder="description" onChange={handleDescriptionChange} />
-          <Select onChange={handleSeverityChange}>
-            <MenuItem value={1}>
-              1 - Low <SeverityIcon severityLevel={1} />
-            </MenuItem>
-            <MenuItem value={2}>
-              2 - Medium <SeverityIcon severityLevel={2} />
-            </MenuItem>
-            <MenuItem value={3}>
-              3 - High <SeverityIcon severityLevel={3} />
-            </MenuItem>
-          </Select>
+          <div>
+            <Input placeholder="cve" onChange={handleNameChange} />
+          </div>
+          <div>
+            <Input placeholder="title" onChange={handleTitleChange} />
+          </div>
+          <div>
+            <Input placeholder="title" onChange={handleTitleChange} />
+          </div>
+          <div>
+            <Input
+              placeholder="description"
+              onChange={handleDescriptionChange}
+            />
+            <Select onChange={handleSeverityChange}>
+              <MenuItem value={1}>
+                <SeverityIcon severityLevel={1} /> Low
+              </MenuItem>
+              <MenuItem value={2}>
+                <SeverityIcon severityLevel={2} /> Medium
+              </MenuItem>
+              <MenuItem value={3}>
+                <SeverityIcon severityLevel={3} /> High
+              </MenuItem>
+              <MenuItem value={3}>
+                <SeverityIcon severityLevel={4} /> Critical
+              </MenuItem>
+            </Select>
+          </div>
         </div>
       ) : (
         <div>
