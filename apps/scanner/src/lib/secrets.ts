@@ -13,13 +13,9 @@ export const secrets: SecretsType = {
 const secretsManager: SecretsManager = new SecretsManager();
 
 export const init_secrets = async () => {
-  const { SecretString: access_key } = await secretsManager
-    .getSecretValue({ SecretId: 'ACCESS_KEY_ID' })
+  const { SecretString } = await secretsManager
+    .getSecretValue({ SecretId: 'AWS_SECRETS' })
     .promise();
-  secrets.access_key = access_key;
-
-  const { SecretString: secret_key } = await secretsManager
-    .getSecretValue({ SecretId: 'SECRET_KEY' })
-    .promise();
-  secrets.secret_key = secret_key;
+  secrets.access_key = JSON.parse(SecretString).AWS_ACCESS_KEY_ID;
+  secrets.secret_key = JSON.parse(SecretString).AWS_SECRET_ACCESS_KEY;
 };

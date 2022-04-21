@@ -1,5 +1,11 @@
 import { App, Environment } from '@aws-cdk/core';
-import { DatabaseStack, HttpStack, ParserStack, HookStack } from './stacks';
+import {
+  DatabaseStack,
+  HttpStack,
+  ParserStack,
+  HookStack,
+  CodeArtifactStack,
+} from './stacks';
 
 const env: Environment = {
   region: 'ap-southeast-2',
@@ -21,12 +27,14 @@ for (const stageName of ['Sta' /*, 'Prd' */]) {
     database,
     stageName,
   });
-  const parserLambdaName = parser.lambdaName;
+  const parserLambda = parser.lambda;
+
+  new CodeArtifactStack(app, `${stageName}CodeArtifact`, {});
 
   const hooks = new HookStack(app, `${stageName}Hooks`, {
     env,
     stageName,
-    parserLambdaName,
+    parserLambda,
   });
   const pipelineSetupURL = hooks.pipelineLinkerApiURL;
 
