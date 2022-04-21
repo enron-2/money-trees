@@ -17,6 +17,8 @@ import { StepTwo } from './StepTwo';
 import { StepThree } from './StepThree';
 import { CompletedStep } from './CompletedStep';
 import CloseIcon from '@mui/icons-material/Close';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
 
 import { environment } from '../../../environments/environment';
 
@@ -37,8 +39,28 @@ const ReportVulnDialog = (props: {
     props.setOpen(false);
   };
 
-  const handleNext = () => {
+  const handleStep = () => {
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  };
+
+  const handleNext = () => {
+    switch (activeStep) {
+      case 0:
+        handleStep();
+        break;
+      case 1:
+        if ((formData.name && formData.description) || formData.vulnId) {
+          handleStep();
+        }
+        break;
+      case 2:
+        if (formData.packageIds || formData.packageId) {
+          handleStep();
+        }
+        break;
+      default:
+        handleStep();
+    }
   };
 
   const handleBack = () => {
@@ -97,7 +119,7 @@ const ReportVulnDialog = (props: {
       onClose={handleClose}
       sx={{
         '& .MuiPaper-root': {
-          minHeight: '80%',
+          minHeight: '60%',
           maxHeight: '80%',
         },
       }}
@@ -127,16 +149,31 @@ const ReportVulnDialog = (props: {
       <DialogActions>
         <div style={{ flex: '1 0 0' }}>
           {activeStep !== 0 && activeStep !== steps.length ? (
-            <Button disabled={getBackDisabled()} onClick={handleBack}>
+            <Button
+              disabled={getBackDisabled()}
+              onClick={handleBack}
+              variant="outlined"
+              startIcon={<ArrowLeftIcon />}
+              size="large"
+            >
               Back
             </Button>
           ) : null}
         </div>
         {activeStep !== 0 && activeStep !== steps.length ? (
-          <Button onClick={handleNext}>Next</Button>
+          <Button
+            onClick={handleNext}
+            variant="outlined"
+            endIcon={<ArrowRightIcon />}
+            size="large"
+          >
+            Next
+          </Button>
         ) : null}
         {activeStep === steps.length ? (
-          <Button onClick={handleReset}>Reset</Button>
+          <Button onClick={handleReset} variant="contained" size="large">
+            Report a new vulnerability
+          </Button>
         ) : null}
       </DialogActions>
     </Dialog>

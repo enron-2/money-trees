@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
 
-import { Typography, MenuItem, CircularProgress } from '@mui/material';
+import {
+  Typography,
+  MenuItem,
+  CircularProgress,
+  Chip,
+  FormControl,
+  Box,
+  Autocomplete,
+  TextField,
+  Divider,
+} from '@mui/material';
 import { getAllPackages } from '../../services/packages';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 
@@ -25,71 +35,85 @@ export const StepThree = (props: {
       });
   }, []);
 
-  const handleChange = (e: any) => {
-    props.formData.packageId = e.target.value;
+  const handleChange = (e: any, value: any) => {
+    props.formData.packageId = value.id;
     props.setFormData(props.formData);
-    setSelectedPackage(e.target.value);
+    setSelectedPackage(value.id);
   };
 
-  const handlePackageChange = (
-    event: SelectChangeEvent<typeof packageList>
-  ) => {
-    const {
-      target: { value },
-    } = event;
-    const val = typeof value === 'string' ? value.split(',') : value;
-    setPackageList(val);
-    props.formData.packageIds = val;
+  const handlePackageChange = (e: any, value: any[]) => {
+    console.log(value);
+    for (let i = 0; i < value.length; i++) {
+      packageList.push(value[i].id);
+    }
+    console.log(packageList);
+    props.formData.packageIds = packageList;
     props.setFormData(props.formData);
-    console.log(props.formData);
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '300px',
-      }}
-    >
+    <div>
       {props.isNewVuln ? (
-        <div>
-          <Select
-            multiple
-            value={packageList}
-            onChange={(e) => handlePackageChange(e)}
-          >
-            {loading ? (
+        <Box
+          sx={{
+            width: '100%',
+            pt: 5,
+            pb: 5,
+            justifyContent: 'center',
+            textAlign: 'center',
+          }}
+        >
+          {loading ? (
+            <Box>
+              <Typography> Loading Packages</Typography>
               <CircularProgress />
-            ) : (
-              packageData.map((pkg) => {
-                return (
-                  <MenuItem key={pkg.id} value={pkg.id}>
-                    {pkg.name}
-                  </MenuItem>
-                );
-              })
-            )}
-          </Select>
-        </div>
+            </Box>
+          ) : (
+            <Autocomplete
+              fullWidth
+              multiple
+              options={packageData}
+              getOptionLabel={(option) => option.name}
+              filterSelectedOptions
+              onChange={(e, value) => handlePackageChange(e, value)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select Packages"
+                  placeholder="Search for packages...."
+                />
+              )}
+            />
+          )}
+        </Box>
       ) : (
-        <div>
-          <Select value={selectedPackage} onChange={handleChange}>
-            {loading ? (
+        <Box
+          sx={{
+            width: '100%',
+            pt: 5,
+            pb: 5,
+            justifyContent: 'center',
+            textAlign: 'center',
+          }}
+        >
+          {loading ? (
+            <Box>
+              <Typography> Loading Packages</Typography>
               <CircularProgress />
-            ) : (
-              packageData.map((pkg) => {
-                return (
-                  <MenuItem key={pkg.id} value={pkg.id}>
-                    {pkg.name}
-                  </MenuItem>
-                );
-              })
-            )}
-          </Select>
-        </div>
+            </Box>
+          ) : (
+            <Autocomplete
+              fullWidth
+              options={packageData}
+              getOptionLabel={(option) => option.name}
+              filterSelectedOptions
+              onChange={(e, value) => handleChange(e, value)}
+              renderInput={(params) => (
+                <TextField {...params} label="Select impacted package" />
+              )}
+            />
+          )}
+        </Box>
       )}
     </div>
   );

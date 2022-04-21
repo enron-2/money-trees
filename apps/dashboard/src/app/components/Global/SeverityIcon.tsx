@@ -8,7 +8,15 @@ import {
 const SeverityIcon = (props: { severityLevel: number }) => {
   return (
     <>
-      {props.severityLevel >= 3 ? <ErrorOutlineOutlined color="error" /> : null}
+      {props.severityLevel >= 4 ? (
+        <>
+          <ErrorOutlineOutlined color="error" />
+          <ErrorOutlineOutlined color="error" />
+        </>
+      ) : null}
+      {props.severityLevel === 3 ? (
+        <ErrorOutlineOutlined color="error" />
+      ) : null}
       {props.severityLevel === 2 ? (
         <WarningAmberOutlined color="warning" />
       ) : null}
