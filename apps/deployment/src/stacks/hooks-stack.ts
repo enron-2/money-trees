@@ -33,9 +33,9 @@ export class HookStack extends Stack {
 
     const codeArtifactDockerLambda = new lambda.DockerImageFunction(
       this,
-      'codeartifact-docker',
+      `${props.stageName}-codeartifact-docker`,
       {
-        functionName: 'codeArtifactDockerLambda',
+        functionName: `${props.stageName}codeArtifactDockerLambda`,
         code: lambda.DockerImageCode.fromImageAsset(
           codeArtifactDockerLambdaAppPath,
           {
@@ -57,17 +57,13 @@ export class HookStack extends Stack {
       iam.ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess')
     );
 
-    const uploadCodeArtifactIntegration = new apiGw.LambdaRestApi(
+    new apiGw.LambdaRestApi(
       this,
-      'RESTEndpoint upload-codeartifact-api',
+      `${props.stageName}RESTEndpoint upload-codeartifact-api`,
       {
         handler: codeArtifactDockerLambda,
       }
     );
-
-    new CfnOutput(this, 'API URL codeartifact lambda', {
-      value: uploadCodeArtifactIntegration.url ?? 'ERROR: No URL allocated',
-    });
 
     // Pipeline
     const pipelineAppPath = join(
@@ -82,17 +78,21 @@ export class HookStack extends Stack {
       'pipeline'
     );
 
-    const pipelineLambda = new lambda.Function(this, 'pipeline-lambda', {
-      runtime: lambda.Runtime.NODEJS_14_X,
-      handler: 'main.handler',
-      memorySize: 256,
-      timeout: Duration.seconds(30),
-      code: lambda.Code.fromAsset(pipelineAppPath),
-      environment: {
-        PARSER_LAMBDA: props.parserLambda.functionName,
-        CODE_ARTIFACT_UPLOAD_LAMBDA: codeArtifactDockerLambda.functionName,
-      },
-    });
+    const pipelineLambda = new lambda.Function(
+      this,
+      `${props.stageName}-pipeline-lambda`,
+      {
+        runtime: lambda.Runtime.NODEJS_14_X,
+        handler: 'main.handler',
+        memorySize: 256,
+        timeout: Duration.seconds(30),
+        code: lambda.Code.fromAsset(pipelineAppPath),
+        environment: {
+          PARSER_LAMBDA: props.parserLambda.functionName,
+          CODE_ARTIFACT_UPLOAD_LAMBDA: codeArtifactDockerLambda.functionName,
+        },
+      }
+    );
     pipelineLambda.role.addManagedPolicy(
       iam.ManagedPolicy.fromAwsManagedPolicyName('SecretsManagerReadWrite')
     );
@@ -105,7 +105,7 @@ export class HookStack extends Stack {
 
     const pipelineApi = new apiGw.LambdaRestApi(
       this,
-      'RESTEndpoint Pipeline Lambda',
+      `${props.stageName}RESTEndpoint Pipeline Lambda`,
       {
         handler: pipelineLambda,
         proxy: true,
@@ -115,10 +115,6 @@ export class HookStack extends Stack {
         description: `REST endpoint for ${props.stageName}`,
       }
     );
-
-    new CfnOutput(this, 'API URL pipeline', {
-      value: pipelineApi.url ?? 'ERROR: No URL allocated',
-    });
 
     // Setup webhook
     const linkPipelineAppPath = join(
@@ -133,9 +129,11 @@ export class HookStack extends Stack {
       'link-webhook'
     );
 
+    const orgName = this.node.tryGetContext('GithubOrgName');
+    if (!orgName) throw new Error('GithubOrgName context undefined');
     const pipelineLinkerLambda = new lambda.Function(
       this,
-      'link-webhook-lambda',
+      `${props.stageName}-link-webhook-lambda`,
       {
         runtime: lambda.Runtime.NODEJS_14_X,
         handler: 'main.handler',
@@ -143,7 +141,7 @@ export class HookStack extends Stack {
         timeout: Duration.seconds(10),
         code: lambda.Code.fromAsset(linkPipelineAppPath),
         environment: {
-          ORG_NAME: 'cs9447-team2-demo',
+          ORG_NAME: orgName,
           WEBHOOK_URL: pipelineApi.url,
         },
       }
@@ -153,16 +151,20 @@ export class HookStack extends Stack {
     );
     pipelineLinkerLambda.node.addDependency(pipelineApi);
 
-    const pipelineLinkerApi = new apiGw.LambdaRestApi(this, 'RESTEndpoint', {
-      handler: pipelineLinkerLambda,
-      proxy: true,
-      deployOptions: {
-        stageName: props.stageName,
-      },
-      description: `REST endpoint for ${props.stageName}`,
-    });
+    const pipelineLinkerApi = new apiGw.LambdaRestApi(
+      this,
+      `${props.stageName}-RESTEndpoint`,
+      {
+        handler: pipelineLinkerLambda,
+        proxy: true,
+        deployOptions: {
+          stageName: props.stageName,
+        },
+        description: `REST endpoint for ${props.stageName}`,
+      }
+    );
 
-    new CfnOutput(this, 'API URL', {
+    new CfnOutput(this, `${props.stageName}PipelineLinkerURL`, {
       value: pipelineLinkerApi.url ?? 'ERROR: No URL allocated',
     });
 

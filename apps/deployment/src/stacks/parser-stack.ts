@@ -28,14 +28,20 @@ export class ParserStack extends Stack {
       'parser'
     );
 
-    const parserLambda = new NodeLambdaFunc(this, 'ParserHandlerFunc', {
-      code: lambda.Code.fromAsset(pathToCode),
-      environment: {
-        TABLE_NAME: database.table.tableName,
-        DOMAIN: 'cs9447-team2-demo',
-      },
-      timeout: Duration.seconds(30),
-    }).LambdaFunction;
+    const domain = this.node.tryGetContext('CodeArtifactDomainName');
+    if (!domain) throw new Error('CodeArtifactDomainName context undefined');
+    const parserLambda = new NodeLambdaFunc(
+      this,
+      `${props.stageName}ParserHandlerFunc`,
+      {
+        code: lambda.Code.fromAsset(pathToCode),
+        environment: {
+          TABLE_NAME: database.table.tableName,
+          DOMAIN: domain,
+        },
+        timeout: Duration.seconds(30),
+      }
+    ).LambdaFunction;
 
     database.grantRead(parserLambda);
     database.grantWrite(parserLambda);

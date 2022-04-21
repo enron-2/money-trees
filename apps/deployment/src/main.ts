@@ -5,6 +5,7 @@ import {
   ParserStack,
   HookStack,
   CodeArtifactStack,
+  DashboardStack,
 } from './stacks';
 
 const env: Environment = {
@@ -12,15 +13,19 @@ const env: Environment = {
 };
 const app = new App();
 
-for (const stageName of ['Sta' /*, 'Prd' */]) {
+for (const stageName of ['Dev' /*, 'Prd' */]) {
   const database = new DatabaseStack(app, `${stageName}Database`, { env });
 
-  const backend = new HttpStack(app, `${stageName}Http`, {
+  new HttpStack(app, `${stageName}Http`, {
     env,
     database,
     stageName,
   });
-  const backendURL = backend.apiURL;
+
+  new CodeArtifactStack(app, `${stageName}CodeArtifact`, {
+    env,
+    stageName,
+  });
 
   const parser = new ParserStack(app, `${stageName}Parser`, {
     env,
@@ -29,14 +34,11 @@ for (const stageName of ['Sta' /*, 'Prd' */]) {
   });
   const parserLambda = parser.lambda;
 
-  new CodeArtifactStack(app, `${stageName}CodeArtifact`, {});
-
-  const hooks = new HookStack(app, `${stageName}Hooks`, {
+  new HookStack(app, `${stageName}Hooks`, {
     env,
     stageName,
     parserLambda,
   });
-  const pipelineSetupURL = hooks.pipelineLinkerApiURL;
 
-  // TODO: add frontend, passing in backendURL
+  new DashboardStack(app, `${stageName}Dashboard`, { env, stageName });
 }
