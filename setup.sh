@@ -21,13 +21,27 @@ read -p "Codeartifact domain name: " CA_DOMAIN
 read -p "Github Access Token: " GH_TOKEN
 read -p "Github Org Name: " GH_ORG
 
+# TODO: save CA_DOMAIN, and GH_TOKEN into a context file
+# if context file exists, don't ask, just use it
+
 read -p "AWS Access Key ID: " AWS_ACCESS_KEY_ID
 read -p "AWS Secret Access Key: " AWS_SECRET_ACCESS_KEY
 read -p "AWS Region: " AWS_REGION
 
-export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
-export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
-export AWS_REGION="$AWS_REGION"
+if [ ! -z $AWS_ACCESS_KEY_ID ];
+then
+  export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+fi
+
+if [ ! -z $AWS_SECRET_ACCESS_KEY];
+then
+  export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+fi
+
+if [ ! -z $AWS_REGION ];
+then
+  export AWS_REGION="$AWS_REGION"
+fi
 
 echo "Saving Github token into Secrets Manager"
 aws secretsmanager create-secret --name GITHUB_TOKEN \
@@ -51,26 +65,25 @@ npm run build
 echo "Deploying application"
 (cd ./apps/deployment; \
   npx cdk deploy --all \
-  --parameters StaCodeArtifact:CodeArtifactDomainName="$CA_DOMAIN" \
-  --parameters StaHooks:GithubOrgName="$GH_ORG" \
+    --context CodeArtifactDomainName="$CA_DOMAIN" \
+    --context GithubOrgName="$GH_ORG" \
 )
 
 
 echo "Linking Webhook to Github Org"
-STACK_NAME="StaHooks"
-KEY="PIPELINE_LINKER_URL"
+STACK_NAME="DevHooks"
+KEY="DevPipelineLinkerURL"
 PIPELINE_LINKER_URL="$(getCfnOutput "$KEY")"
-if [ $PIPELINE_LINKER_URL -z ];
+if [ -z $PIPELINE_LINKER_URL ];
 then
     echo "PIPELINE_LINKER_URL CFN_OUTPUT NOT FOUND"
     exit 1
 fi
-curl -s $PIPELINE_LINKER_URL
+curl $PIPELINE_LINKER_URL
 
 echo "Deploying Dashboard"
-STACK_NAME="StaHttp"
-KEY="APIURL"
-# KEY="HTTP_API_URL"
+STACK_NAME="DevHttp"
+KEY="DevHttpApiURL"
 HTTP_API_URL="$(getCfnOutput "$KEY")"
 if [ -z $HTTP_API_URL ];
 then
@@ -93,4 +106,10 @@ npx nx build dashboard
 cat $tmp_file > ./apps/dashboard/src/environments/environment.prod.ts
 
 echo "Deploy dashboard"
-(cd ./apps/deployment;  npx cdk deploy StaDashboard)
+(cd ./apps/deployment;  npx cdk deploy DevDashboard \
+    --context CodeArtifactDomainName="$CA_DOMAIN" \
+    --context GithubOrgName="$GH_ORG" \
+)
+
+dash_url="$(getCfnOutput "DevDashboardURL")"
+echo "Dashboard URL: $dash_url"
