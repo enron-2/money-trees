@@ -1,7 +1,6 @@
 import React from 'react';
 
 import Router from './components/Router';
-import enron2gif from '../../../../assets/enron.gif';
 
 function App() {
   return (

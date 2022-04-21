@@ -16,6 +16,7 @@ import SearchBar from './SearchBar';
 import Packages from '../Packages';
 import Projects from '../Projects';
 import ReportVulnDialog from '../ReportVuln';
+import enron2gif from '../../../../../../assets/enron.gif';
 
 const HomePage = (props: { view: number }) => {
   const [search, setSearch] = useState('');
@@ -50,6 +51,15 @@ const HomePage = (props: { view: number }) => {
                 zIndex: -1,
               }}
             />
+            <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+              <img
+                src={enron2gif}
+                alt="enron 2 logo"
+                width="50"
+                height="50"
+                style={{}}
+              />
+            </a>
             <Typography
               variant="h6"
               sx={{ textAlign: 'right', lineHeight: 1.2 }}
