@@ -22,7 +22,13 @@ const Packages = (props: { search: string }) => {
   }, []);
 
   return (
-    <Box paddingTop={3} paddingBottom={3} paddingLeft={6} paddingRight={6}>
+    <Box
+      sx={{ justifyContent: 'center', textAlign: 'center' }}
+      paddingTop={3}
+      paddingBottom={3}
+      paddingLeft={6}
+      paddingRight={6}
+    >
       {loading ? (
         <CircularProgress />
       ) : (

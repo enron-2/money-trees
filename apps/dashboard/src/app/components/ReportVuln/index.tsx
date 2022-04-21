@@ -39,8 +39,28 @@ const ReportVulnDialog = (props: {
     props.setOpen(false);
   };
 
-  const handleNext = () => {
+  const handleStep = () => {
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  };
+
+  const handleNext = () => {
+    switch (activeStep) {
+      case 0:
+        handleStep();
+        break;
+      case 1:
+        if ((formData.name && formData.description) || formData.vulnId) {
+          handleStep();
+        }
+        break;
+      case 2:
+        if (formData.packageIds || formData.packageId) {
+          handleStep();
+        }
+        break;
+      default:
+        handleStep();
+    }
   };
 
   const handleBack = () => {
@@ -99,7 +119,7 @@ const ReportVulnDialog = (props: {
       onClose={handleClose}
       sx={{
         '& .MuiPaper-root': {
-          minHeight: '80%',
+          minHeight: '60%',
           maxHeight: '80%',
         },
       }}
@@ -132,8 +152,8 @@ const ReportVulnDialog = (props: {
             <Button
               disabled={getBackDisabled()}
               onClick={handleBack}
-              variant="contained"
-              endIcon={<ArrowLeftIcon />}
+              variant="outlined"
+              startIcon={<ArrowLeftIcon />}
               size="large"
             >
               Back
@@ -143,7 +163,7 @@ const ReportVulnDialog = (props: {
         {activeStep !== 0 && activeStep !== steps.length ? (
           <Button
             onClick={handleNext}
-            variant="contained"
+            variant="outlined"
             endIcon={<ArrowRightIcon />}
             size="large"
           >

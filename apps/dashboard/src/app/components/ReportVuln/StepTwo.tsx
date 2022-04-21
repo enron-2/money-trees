@@ -22,23 +22,39 @@ import { List } from '@mui/icons-material';
 const marks = [
   {
     value: 1,
-    label: 'Low',
-    color: 'yellow',
+    label: (
+      <div style={{ display: 'flex', alignContent: 'center' }}>
+        <SeverityIcon severityLevel={1} />
+        <Typography>Low</Typography>
+      </div>
+    ),
   },
   {
     value: 2,
-    label: 'Medium',
-    color: 'orange',
+    label: (
+      <div style={{ display: 'flex', alignContent: 'center' }}>
+        <SeverityIcon severityLevel={2} />
+        <Typography>Medium</Typography>
+      </div>
+    ),
   },
   {
     value: 3,
-    label: 'High',
-    color: 'red',
+    label: (
+      <div style={{ display: 'flex', alignContent: 'center' }}>
+        <SeverityIcon severityLevel={3} />
+        <Typography>High</Typography>
+      </div>
+    ),
   },
   {
     value: 4,
-    label: 'Critical',
-    color: 'red',
+    label: (
+      <div style={{ display: 'flex', alignContent: 'center' }}>
+        <SeverityIcon severityLevel={4} />
+        <Typography>Critical</Typography>
+      </div>
+    ),
   },
 ];
 
@@ -65,10 +81,11 @@ export const StepTwo = (props: {
     }
   }, [props.isNewVuln]);
 
-  const handleChange = (e: any, value: any[]) => {
-    props.formData.vulnId = e.target.value;
+  const handleChange = (e: any, value: any) => {
+    console.log(value.id);
+    props.formData.vulnId = value.id;
     props.setFormData(props.formData);
-    setSelectedVuln(e.target.value);
+    setSelectedVuln(value.id);
   };
 
   const handleSeverityChange = (e: any) => {
@@ -80,6 +97,7 @@ export const StepTwo = (props: {
   const handleNameChange = (e: any) => {
     props.formData.name = e.target.value;
     props.setFormData(props.formData);
+    console.log(props.formData);
     setSelectedVuln(e.target.value);
   };
 
@@ -98,7 +116,7 @@ export const StepTwo = (props: {
             flexDirection: 'column',
           }}
         >
-          <Box sx={{ pl: 10, pt: 15, pr: 10, pb: 3 }}>
+          <Box sx={{ pl: 10, pt: 5, pr: 10, pb: 3 }}>
             <Typography> CVE name: </Typography>
             <TextField onChange={handleNameChange} fullWidth />
           </Box>
@@ -138,25 +156,33 @@ export const StepTwo = (props: {
           </Box>
         </Box>
       ) : (
-        // <Box>
-        //   <Autocomplete 
-        //     fullWidth
-        //     options={vulnData}
-        //     getOptionLabel={(option) => option.name}
-        //     filterSelectOptions
-        //     onChange={{e, value} => handleChange(e, value)}
-        //     renderInput={(params) => 
-        //       loading ? (
-        //         <CircularProgress />
-        //       ) : (
-        //         <TextField
-        //           {...params}
-        //           label="Select Vulnerability"
-        //         />
-        //       )
-        //     }
-        //   />
-        // </Box>
+        <Box
+          sx={{
+            width: '100%',
+            pt: 5,
+            pb: 5,
+            justifyContent: 'center',
+            textAlign: 'center',
+          }}
+        >
+          {loading ? (
+            <Box>
+              <Typography> Loading Packages</Typography>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Autocomplete
+              fullWidth
+              options={vulnData}
+              getOptionLabel={(option) => option.name}
+              filterSelectedOptions
+              onChange={(e, value) => handleChange(e, value)}
+              renderInput={(params) => (
+                <TextField {...params} label="Select Vulnerability" />
+              )}
+            />
+          )}
+        </Box>
         // <Grid>
         //   <Select value={selectedVuln} onChange={handleChange}>
         //     {vulnData.map((vuln) => {
