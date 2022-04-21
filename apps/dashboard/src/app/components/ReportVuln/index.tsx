@@ -17,6 +17,8 @@ import { StepTwo } from './StepTwo';
 import { StepThree } from './StepThree';
 import { CompletedStep } from './CompletedStep';
 import CloseIcon from '@mui/icons-material/Close';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
 
 import { environment } from '../../../environments/environment';
 
@@ -127,16 +129,31 @@ const ReportVulnDialog = (props: {
       <DialogActions>
         <div style={{ flex: '1 0 0' }}>
           {activeStep !== 0 && activeStep !== steps.length ? (
-            <Button disabled={getBackDisabled()} onClick={handleBack}>
+            <Button
+              disabled={getBackDisabled()}
+              onClick={handleBack}
+              variant="contained"
+              endIcon={<ArrowLeftIcon />}
+              size="large"
+            >
               Back
             </Button>
           ) : null}
         </div>
         {activeStep !== 0 && activeStep !== steps.length ? (
-          <Button onClick={handleNext}>Next</Button>
+          <Button
+            onClick={handleNext}
+            variant="contained"
+            endIcon={<ArrowRightIcon />}
+            size="large"
+          >
+            Next
+          </Button>
         ) : null}
         {activeStep === steps.length ? (
-          <Button onClick={handleReset}>Reset</Button>
+          <Button onClick={handleReset} variant="contained" size="large">
+            Report a new vulnerability
+          </Button>
         ) : null}
       </DialogActions>
     </Dialog>

@@ -2,8 +2,45 @@ import { useEffect, useState } from 'react';
 
 import { getVulns } from '../../services/vulnerabilities';
 
-import { Typography, Select, MenuItem, Input } from '@mui/material';
+import {
+  Typography,
+  Select,
+  MenuItem,
+  Input,
+  Grid,
+  Box,
+  Divider,
+  ListItem,
+  TextField,
+  Slider,
+  CircularProgress,
+  Autocomplete,
+} from '@mui/material';
 import SeverityIcon from '../Global/SeverityIcon';
+import { List } from '@mui/icons-material';
+
+const marks = [
+  {
+    value: 1,
+    label: 'Low',
+    color: 'yellow',
+  },
+  {
+    value: 2,
+    label: 'Medium',
+    color: 'orange',
+  },
+  {
+    value: 3,
+    label: 'High',
+    color: 'red',
+  },
+  {
+    value: 4,
+    label: 'Critical',
+    color: 'red',
+  },
+];
 
 export const StepTwo = (props: {
   isNewVuln: boolean;
@@ -12,12 +49,14 @@ export const StepTwo = (props: {
 }) => {
   const [vulnData, setVulnData] = useState<any[]>([]);
   const [selectedVuln, setSelectedVuln] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!props.isNewVuln) {
       getVulns()
         .then((response: any) => {
           setVulnData(response.data);
+          setLoading(false);
         })
         .catch((err: any) => {
           console.log(err);
@@ -26,7 +65,7 @@ export const StepTwo = (props: {
     }
   }, [props.isNewVuln]);
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: any, value: any[]) => {
     props.formData.vulnId = e.target.value;
     props.setFormData(props.formData);
     setSelectedVuln(e.target.value);
@@ -44,12 +83,6 @@ export const StepTwo = (props: {
     setSelectedVuln(e.target.value);
   };
 
-  const handleTitleChange = (e: any) => {
-    props.formData.title = e.target.value;
-    props.setFormData(props.formData);
-    setSelectedVuln(e.target.value);
-  };
-
   const handleDescriptionChange = (e: any) => {
     props.formData.description = e.target.value;
     props.setFormData(props.formData);
@@ -57,32 +90,38 @@ export const StepTwo = (props: {
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '300px',
-      }}
-    >
+    <div>
       {props.isNewVuln ? (
-        <div>
-          <div>
-            <Input placeholder="cve" onChange={handleNameChange} />
-          </div>
-          <div>
-            <Input placeholder="title" onChange={handleTitleChange} />
-          </div>
-          <div>
-            <Input placeholder="title" onChange={handleTitleChange} />
-          </div>
-          <div>
-            <Input
-              placeholder="description"
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <Box sx={{ pl: 10, pt: 15, pr: 10, pb: 3 }}>
+            <Typography> CVE name: </Typography>
+            <TextField onChange={handleNameChange} fullWidth />
+          </Box>
+          <Box sx={{ pl: 10, pt: 3, pr: 10, pb: 3 }}>
+            <Typography> Description: </Typography>
+            <TextField
               onChange={handleDescriptionChange}
+              id="Vuln Description"
+              multiline
+              fullWidth
             />
-            <Select onChange={handleSeverityChange}>
+          </Box>
+          <Box sx={{ pl: 10, pt: 3, pr: 10, pb: 3 }}>
+            <Typography> Severity: </Typography>
+            <Slider
+              defaultValue={2}
+              min={1}
+              max={4}
+              step={1}
+              marks={marks}
+              onChange={handleSeverityChange}
+            />
+            {/* <Select onChange={handleSeverityChange} sx={{ width: '100%' }}>
               <MenuItem value={1}>
                 <SeverityIcon severityLevel={1} /> Low
               </MenuItem>
@@ -95,21 +134,40 @@ export const StepTwo = (props: {
               <MenuItem value={3}>
                 <SeverityIcon severityLevel={4} /> Critical
               </MenuItem>
-            </Select>
-          </div>
-        </div>
+            </Select> */}
+          </Box>
+        </Box>
       ) : (
-        <div>
-          <Select value={selectedVuln} onChange={handleChange}>
-            {vulnData.map((vuln) => {
-              return (
-                <MenuItem key={vuln.name} value={vuln.id} id="test">
-                  {vuln.name}
-                </MenuItem>
-              );
-            })}
-          </Select>
-        </div>
+        // <Box>
+        //   <Autocomplete 
+        //     fullWidth
+        //     options={vulnData}
+        //     getOptionLabel={(option) => option.name}
+        //     filterSelectOptions
+        //     onChange={{e, value} => handleChange(e, value)}
+        //     renderInput={(params) => 
+        //       loading ? (
+        //         <CircularProgress />
+        //       ) : (
+        //         <TextField
+        //           {...params}
+        //           label="Select Vulnerability"
+        //         />
+        //       )
+        //     }
+        //   />
+        // </Box>
+        // <Grid>
+        //   <Select value={selectedVuln} onChange={handleChange}>
+        //     {vulnData.map((vuln) => {
+        //       return (
+        //         <MenuItem key={vuln.name} value={vuln.id} id="test">
+        //           {vuln.name}
+        //         </MenuItem>
+        //       );
+        //     })}
+        //   </Select>
+        // </Grid>
       )}
     </div>
   );

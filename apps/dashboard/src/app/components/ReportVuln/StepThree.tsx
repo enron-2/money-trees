@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 
-import { Typography, MenuItem, CircularProgress } from '@mui/material';
+import {
+  Typography,
+  MenuItem,
+  CircularProgress,
+  Chip,
+  FormControl,
+  Box,
+  Autocomplete,
+  TextField,
+} from '@mui/material';
 import { getAllPackages } from '../../services/packages';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 
@@ -31,49 +40,63 @@ export const StepThree = (props: {
     setSelectedPackage(e.target.value);
   };
 
-  const handlePackageChange = (
-    event: SelectChangeEvent<typeof packageList>
-  ) => {
-    const {
-      target: { value },
-    } = event;
-    const val = typeof value === 'string' ? value.split(',') : value;
-    setPackageList(val);
-    props.formData.packageIds = val;
+  const handlePackageChange = (e: any, value: any[]) => {
+    console.log(value);
+    for (let i = 0; i < value.length; i++) {
+      packageList.push(value[i].id);
+    }
+    console.log(packageList);
+    props.formData.packageIds = packageList;
     props.setFormData(props.formData);
-    console.log(props.formData);
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '300px',
-      }}
-    >
+    <div>
       {props.isNewVuln ? (
-        <div>
-          <Select
+        <Box
+          sx={{
+            m: 5,
+            justifyContent: 'center',
+          }}
+        >
+          <Autocomplete
+            fullWidth
             multiple
-            value={packageList}
-            onChange={(e) => handlePackageChange(e)}
-          >
-            {loading ? (
-              <CircularProgress />
-            ) : (
-              packageData.map((pkg) => {
-                return (
-                  <MenuItem key={pkg.id} value={pkg.id}>
-                    {pkg.name}
-                  </MenuItem>
-                );
-              })
-            )}
-          </Select>
-        </div>
+            options={packageData}
+            getOptionLabel={(option) => option.name}
+            filterSelectedOptions
+            onChange={(e, value) => handlePackageChange(e, value)}
+            renderInput={(params) =>
+              loading ? (
+                <CircularProgress />
+              ) : (
+                <TextField
+                  {...params}
+                  label="Select Packages"
+                  placeholder="Search for packages...."
+                />
+              )
+            }
+          />
+          {/* <Select
+              sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}
+              multiple
+              value={packageList}
+              onChange={(e) => handlePackageChange(e)}
+            >
+              {loading ? (
+                <CircularProgress />
+              ) : (
+                packageData.map((pkg) => {
+                  return (
+                    <MenuItem key={pkg.id} value={pkg.id}>
+                      {pkg.name}
+                    </MenuItem>
+                  );
+                })
+              )}
+            </Select> */}
+        </Box>
       ) : (
         <div>
           <Select value={selectedPackage} onChange={handleChange}>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Typography, Button } from '@mui/material';
+import { Typography, Button, Box } from '@mui/material';
 
 export const StepOne = (props: {
   setIsNewVuln: React.Dispatch<React.SetStateAction<boolean>>;
@@ -9,31 +9,36 @@ export const StepOne = (props: {
   // const handleClick = () => {};
 
   return (
-    <div
-      style={{
+    <Box
+      sx={{
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        height: '300px',
       }}
     >
       <Button
+        sx={{ mt: 15, ml: 5, mr: 5, mb: 5, p: 5 }}
         onClick={() => {
           props.setIsNewVuln(true);
           props.setActiveStep(1);
         }}
+        variant="outlined"
+        size="large"
       >
-        New Vuln
+        Report a new vulnerability
       </Button>
       <Button
+        sx={{ m: 10, p: 5 }}
         onClick={() => {
           props.setIsNewVuln(false);
           props.setActiveStep(1);
         }}
+        variant="outlined"
+        size="large"
       >
-        Exisitng Vuln
+        Add a vulnerability to an existing package
       </Button>
-    </div>
+    </Box>
   );
 };
