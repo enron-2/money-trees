@@ -1,16 +1,23 @@
 import { Stack, StackProps, Construct, CfnParameter } from '@aws-cdk/core';
 import * as codeArtifact from '@aws-cdk/aws-codeartifact';
 
-export interface CodeArtifactStackProps extends StackProps {
-  codeArtifactDomain: CfnParameter;
-}
-
 export class CodeArtifactStack extends Stack {
-  constructor(scope: Construct, id: string, props?: CodeArtifactStackProps) {
+  CodeArtifactDomainName: CfnParameter;
+
+  constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
+    this.CodeArtifactDomainName = new CfnParameter(
+      this,
+      'CodeArtifactDomainName',
+      {
+        type: 'String',
+        description: 'Domain name of CodeArtifact',
+      }
+    );
+
     /* this is bucketname for directory */
-    const orgName = props.codeArtifactDomain.valueAsString;
+    const orgName = this.CodeArtifactDomainName.valueAsString;
     const caDomain = new codeArtifact.CfnDomain(this, 'CA Domain', {
       domainName: orgName,
     });

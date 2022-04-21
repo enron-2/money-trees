@@ -14,13 +14,18 @@ import { join } from 'path';
 interface HookStackProps extends StackProps {
   stageName: string;
   parserLambda: lambda.Function;
-  githubOrg: CfnParameter;
 }
 
 export class HookStack extends Stack {
   pipelineLinkerApiURL: string;
+  GithubOrgName: CfnParameter;
   constructor(scope: Construct, id: string, props: HookStackProps) {
     super(scope, id, props);
+
+    this.GithubOrgName = new CfnParameter(this, 'GithubOrgName', {
+      type: 'String',
+      description: 'Github Organization Name',
+    });
 
     // codeArtifactDockerLambda
     const codeArtifactDockerLambdaAppPath = join(
@@ -133,7 +138,7 @@ export class HookStack extends Stack {
         timeout: Duration.seconds(10),
         code: lambda.Code.fromAsset(linkPipelineAppPath),
         environment: {
-          ORG_NAME: props.githubOrg.valueAsString,
+          ORG_NAME: this.GithubOrgName.valueAsString,
           WEBHOOK_URL: pipelineApi.url,
         },
       }
