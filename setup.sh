@@ -1,5 +1,17 @@
 #!/bin/env bash
 
+getCfnOutput() {
+  aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq '.Stacks[0].Outputs[]' -c | while read i; do
+      Key=`echo "$i" | jq '.OutputKey' --raw-output`
+      Val=`echo "$i" | jq '.OutputValue' --raw-output`
+      if [ "$Key" = "$1" ];
+      then
+        echo -n "$Val"
+        break
+      fi
+  done
+}
+
 # TODO: use other than bash script, jq is not a unix tool
 
 echo "SETUP"
@@ -45,15 +57,7 @@ npx cdk deploy --all --parameters CodeArtifactDomainName="$CA_DOMAIN" --paramete
 echo "Linking Webhook to Github Org"
 STACK_NAME="StaHooks"
 KEY="PIPELINE_LINKER_URL"
-PIPELINE_LINKER_URL=""
-aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq '.Stacks[0].Outputs[]' -c | while read i; do
-    Key=`echo "$i" | jq '.OutputKey' --raw-output`
-    Val=`echo "$i" | jq '.OutputValue' --raw-output`
-    if [ "$Key" = "$KEY" ];
-    then
-      PIPELINE_LINKER_URL="$Val"
-    fi
-done
+PIPELINE_LINKER_URL="$(getCfnOutput "$KEY")"
 if [ $PIPELINE_LINKER_URL -z ];
 then
     echo "PIPELINE_LINKER_URL CFN_OUTPUT NOT FOUND"
@@ -63,17 +67,10 @@ curl -s $PIPELINE_LINKER_URL
 
 echo "Deploying Dashboard"
 STACK_NAME="StaHttp"
-KEY="HTTP_API_URL"
-HTTP_API_URL=""
-aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq '.Stacks[0].Outputs[]' -c | while read i; do
-    Key=`echo "$i" | jq '.OutputKey' --raw-output`
-    Val=`echo "$i" | jq '.OutputValue' --raw-output`
-    if [ "$Key" = "$KEY" ];
-    then
-      HTTP_API_URL="$Val"
-    fi
-done
-if [ $HTTP_API_URL -z ];
+KEY="APIURL"
+# KEY="HTTP_API_URL"
+HTTP_API_URL="$(getCfnOutput "$KEY")"
+if [ -z $HTTP_API_URL ];
 then
     echo "HTTP_API_URL CFN_OUTPUT NOT FOUND"
     exit 1
@@ -86,7 +83,7 @@ cat ./apps/dashboard/src/environments/environment.prod.ts > $tmp_file
 echo "export const environment = {
   production: true,
   apiHost: '$HTTP_API_URL',
-};" > ./apps/dashboard/src/environments/environment.prod.ts
+};" | tee ./apps/dashboard/src/environments/environment.prod.ts
 
 echo "Building dashboard with production configurations"
 npx nx build dashboard
@@ -95,9 +92,3 @@ cat $tmp_file > ./apps/dashboard/src/environments/environment.prod.ts
 
 echo "Deploy dashboard"
 npx cdk deploy StaDashboard
-
-# Reset the env we fked around with
-export AWS_ACCESS_KEY_ID=""
-export AWS_SECRET_ACCESS_KEY=""
-export AWS_REGION=""
-
