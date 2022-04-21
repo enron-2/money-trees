@@ -27,14 +27,14 @@ for (const stageName of ['Sta' /*, 'Prd' */]) {
     database,
     stageName,
   });
-  const parserLambdaName = parser.lambdaName;
+  const parserLambda = parser.lambda;
 
   new CodeArtifactStack(app, `${stageName}CodeArtifact`, {});
 
   const hooks = new HookStack(app, `${stageName}Hooks`, {
     env,
     stageName,
-    parserLambdaName,
+    parserLambda,
   });
   const pipelineSetupURL = hooks.pipelineLinkerApiURL;
 

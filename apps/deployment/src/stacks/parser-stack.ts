@@ -11,7 +11,7 @@ interface ParserStackProps extends StackProps {
 }
 
 export class ParserStack extends Stack {
-  lambdaName: string;
+  lambda: lambda.Function;
 
   constructor(scope: Construct, id: string, props: ParserStackProps) {
     const { database, ...stackProps } = props;
@@ -37,13 +37,16 @@ export class ParserStack extends Stack {
       timeout: Duration.seconds(30),
     }).LambdaFunction;
 
-    this.lambdaName = parserLambda.functionName;
-
     database.grantRead(parserLambda);
     database.grantWrite(parserLambda);
     parserLambda.role.addManagedPolicy(
       iam.ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess')
     );
+    parserLambda.role.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess')
+    );
+
+    this.lambda = parserLambda;
 
     // TODO: if stageName == prod
     // Add 'cognito' or some other auth method

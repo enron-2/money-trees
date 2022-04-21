@@ -6,25 +6,23 @@ import { ParserModule } from './app/parser.module';
 import { ParserService } from './app/parser.service';
 import { Octokit } from 'octokit';
 
-export type PayloadInterface = {
-  /** b64 encoded or something idfk */
+interface ParserProps extends InvocationRequest {
   owner: string;
   repo: string;
   token: string;
-};
+}
 
 export const handler: Handler<InvocationRequest, string> = async (
-  event: InvocationRequest
+  event: ParserProps
 ) => {
   const app = await NestFactory.createApplicationContext(ParserModule);
   const parser = app.get(ParserService);
   parser.domain = process.env.DOMAIN;
 
-  const payload: PayloadInterface = JSON.parse(event.Payload.toString());
-  const octokit = new Octokit({ auth: payload.token });
+  const octokit = new Octokit({ auth: event.token });
   const resp = await octokit.rest.repos.getContent({
-    owner: payload.owner,
-    repo: payload.repo,
+    owner: event.owner,
+    repo: event.repo,
     path: 'package-lock.json',
   });
   const content = (resp.data as any).content;
@@ -36,8 +34,8 @@ export const handler: Handler<InvocationRequest, string> = async (
   );
 
   const res = await parser.saveFileContents(lockFileContent, {
-    owner: payload.owner,
-    name: payload.repo,
+    owner: event.owner,
+    name: event.repo,
   });
 
   await app.close();

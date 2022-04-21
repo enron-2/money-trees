@@ -12,7 +12,7 @@ import { join } from 'path';
 
 interface HookStackProps extends StackProps {
   stageName: string;
-  parserLambdaName: string;
+  parserLambda: lambda.Function;
 }
 
 export class HookStack extends Stack {
@@ -89,7 +89,7 @@ export class HookStack extends Stack {
       timeout: Duration.seconds(30),
       code: lambda.Code.fromAsset(pipelineAppPath),
       environment: {
-        PARSER_LAMBDA: props.parserLambdaName,
+        PARSER_LAMBDA: props.parserLambda.functionName,
         CODE_ARTIFACT_UPLOAD_LAMBDA: codeArtifactDockerLambda.functionName,
       },
     });
@@ -100,6 +100,8 @@ export class HookStack extends Stack {
     pipelineLambda.role.addManagedPolicy(
       iam.ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess')
     );
+    props.parserLambda.grantInvoke(pipelineLambda);
+    codeArtifactDockerLambda.grantInvoke(pipelineLambda);
 
     const pipelineApi = new apiGw.LambdaRestApi(
       this,

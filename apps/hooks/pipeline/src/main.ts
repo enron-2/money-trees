@@ -40,44 +40,31 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
   if (!isMainBranch) return { statusCode: 400, body: 'Not a main branch' };
 
   // upload to repository to Code Artifact
-  const gitUrl = body.repository.git_url;
   const location = `/tmp/${repoName}-${Date.now()}`;
 
   /* call lambda with the below payloads to upload to code artifact */
+  const lambda = new Lambda({ region: 'ap-southeast-2' });
+
   console.log(`Invoking ${process.env.CODE_ARTIFACT_UPLOAD_LAMBDA}`);
-  let resp = new Lambda().invoke(
-    {
+  await lambda
+    .invoke({
       FunctionName: process.env.CODE_ARTIFACT_UPLOAD_LAMBDA,
       InvocationType: 'Event',
       Payload: JSON.stringify({
         codeArtifactDomain: orgName,
         codeArtifactRepo: `private-${orgName}`,
-        codeArtifactNamespace: orgName,
         gitOwner: orgName,
         gitRepoName: repoName,
-        gitRepoUrl: gitUrl,
         gitToken: token,
         downloadLocation: location,
       }),
-    },
-    (err, data) => {
-      if (err) {
-        console.log(err);
-        return { statusCode: 500, body: 'Failed to upload to Code Artifact' };
-      }
-      console.log(data);
-      return {
-        statusCode: 200,
-        body: 'Successfully uploaded to Code Artifact',
-      };
-    }
-  );
-  console.log(resp);
+    })
+    .promise();
 
   // parse package-lock.json
   console.log(`Invoking ${process.env.PARSER_LAMBDA}`);
-  resp = new Lambda().invoke(
-    {
+  await lambda
+    .invoke({
       FunctionName: process.env.PARSER_LAMBDA,
       InvocationType: 'Event',
       Payload: JSON.stringify({
@@ -85,27 +72,13 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
         repo: repoName,
         token: token,
       }),
-    },
-    (err, data) => {
-      if (err) {
-        console.log(err);
-        return { statusCode: 500, body: 'Failed to parse' };
-      }
-      console.log(data);
-      return {
-        statusCode: 200,
-        body: 'Successfully parsed',
-      };
-    }
-  );
-  console.log(resp);
+    })
+    .promise();
 
   // NOTE: lambda for scanner can be invoked here
 
   return {
     statusCode: 200,
-    body: JSON.stringify(
-      `Pipeline ran for https://github.com/${orgName}/${repoName}`
-    ),
+    body: JSON.stringify(`Pipeline ran for ${orgName}/${repoName}`),
   };
 };
