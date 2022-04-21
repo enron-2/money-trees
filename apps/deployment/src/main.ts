@@ -1,4 +1,4 @@
-import { App, Environment } from '@aws-cdk/core';
+import { App, CfnParameter, Environment } from '@aws-cdk/core';
 import {
   DatabaseStack,
   HttpStack,
@@ -12,31 +12,41 @@ const env: Environment = {
 };
 const app = new App();
 
+const CodeArtifactDomainName = new CfnParameter(app, 'CodeArtifactDomainName', {
+  type: 'String',
+  description: 'Domain name of CodeArtifact',
+});
+
+const GithubOrgName = new CfnParameter(app, 'GithubOrgName', {
+  type: 'String',
+  description: 'Github Organization Name',
+});
+
 for (const stageName of ['Sta' /*, 'Prd' */]) {
   const database = new DatabaseStack(app, `${stageName}Database`, { env });
 
-  const backend = new HttpStack(app, `${stageName}Http`, {
+  new HttpStack(app, `${stageName}Http`, {
     env,
     database,
     stageName,
   });
-  const backendURL = backend.apiURL;
 
   const parser = new ParserStack(app, `${stageName}Parser`, {
     env,
     database,
     stageName,
+    codeArtifactDomain: CodeArtifactDomainName,
   });
   const parserLambda = parser.lambda;
 
-  new CodeArtifactStack(app, `${stageName}CodeArtifact`, {});
+  new CodeArtifactStack(app, `${stageName}CodeArtifact`, {
+    codeArtifactDomain: CodeArtifactDomainName,
+  });
 
-  const hooks = new HookStack(app, `${stageName}Hooks`, {
+  new HookStack(app, `${stageName}Hooks`, {
     env,
     stageName,
     parserLambda,
+    githubOrg: GithubOrgName,
   });
-  const pipelineSetupURL = hooks.pipelineLinkerApiURL;
-
-  // TODO: add frontend, passing in backendURL
 }

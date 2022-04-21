@@ -53,7 +53,7 @@ export class HttpStack extends Stack {
       },
     });
 
-    new CfnOutput(this, 'API URL', {
+    new CfnOutput(this, 'HTTP_API_URL', {
       value: api.url ?? 'ERROR: No URL allocated',
     });
 

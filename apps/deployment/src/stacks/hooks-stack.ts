@@ -4,6 +4,7 @@ import {
   Construct,
   CfnOutput,
   Duration,
+  CfnParameter,
 } from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apiGw from '@aws-cdk/aws-apigateway';
@@ -13,6 +14,7 @@ import { join } from 'path';
 interface HookStackProps extends StackProps {
   stageName: string;
   parserLambda: lambda.Function;
+  githubOrg: CfnParameter;
 }
 
 export class HookStack extends Stack {
@@ -57,16 +59,8 @@ export class HookStack extends Stack {
       iam.ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess')
     );
 
-    const uploadCodeArtifactIntegration = new apiGw.LambdaRestApi(
-      this,
-      'RESTEndpoint upload-codeartifact-api',
-      {
-        handler: codeArtifactDockerLambda,
-      }
-    );
-
-    new CfnOutput(this, 'API URL codeartifact lambda', {
-      value: uploadCodeArtifactIntegration.url ?? 'ERROR: No URL allocated',
+    new apiGw.LambdaRestApi(this, 'RESTEndpoint upload-codeartifact-api', {
+      handler: codeArtifactDockerLambda,
     });
 
     // Pipeline
@@ -116,10 +110,6 @@ export class HookStack extends Stack {
       }
     );
 
-    new CfnOutput(this, 'API URL pipeline', {
-      value: pipelineApi.url ?? 'ERROR: No URL allocated',
-    });
-
     // Setup webhook
     const linkPipelineAppPath = join(
       __dirname,
@@ -143,7 +133,7 @@ export class HookStack extends Stack {
         timeout: Duration.seconds(10),
         code: lambda.Code.fromAsset(linkPipelineAppPath),
         environment: {
-          ORG_NAME: 'cs9447-team2-demo',
+          ORG_NAME: props.githubOrg.valueAsString,
           WEBHOOK_URL: pipelineApi.url,
         },
       }
@@ -162,7 +152,7 @@ export class HookStack extends Stack {
       description: `REST endpoint for ${props.stageName}`,
     });
 
-    new CfnOutput(this, 'API URL', {
+    new CfnOutput(this, 'PIPELINE_LINKER_URL', {
       value: pipelineLinkerApi.url ?? 'ERROR: No URL allocated',
     });
 

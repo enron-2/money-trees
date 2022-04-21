@@ -1,4 +1,10 @@
-import { Stack, StackProps, Construct, Duration } from '@aws-cdk/core';
+import {
+  Stack,
+  StackProps,
+  Construct,
+  Duration,
+  CfnParameter,
+} from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import { DatabaseStack } from './database-stack';
 import { join } from 'path';
@@ -8,6 +14,7 @@ import * as iam from '@aws-cdk/aws-iam';
 interface ParserStackProps extends StackProps {
   database: DatabaseStack;
   stageName: string;
+  codeArtifactDomain: CfnParameter;
 }
 
 export class ParserStack extends Stack {
@@ -32,7 +39,7 @@ export class ParserStack extends Stack {
       code: lambda.Code.fromAsset(pathToCode),
       environment: {
         TABLE_NAME: database.table.tableName,
-        DOMAIN: 'cs9447-team2-demo',
+        DOMAIN: props.codeArtifactDomain.valueAsString,
       },
       timeout: Duration.seconds(30),
     }).LambdaFunction;
