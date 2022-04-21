@@ -25,8 +25,6 @@ read -p "AWS Access Key ID: " AWS_ACCESS_KEY_ID
 read -p "AWS Secret Access Key: " AWS_SECRET_ACCESS_KEY
 read -p "AWS Region: " AWS_REGION
 
-cd ./apps/deployment
-
 export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
 export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
 export AWS_REGION="$AWS_REGION"
@@ -51,7 +49,11 @@ echo "Building application"
 npm run build
 
 echo "Deploying application"
-npx cdk deploy --all --parameters CodeArtifactDomainName="$CA_DOMAIN" --parameters GithubOrgName="$GH_ORG"
+(cd ./apps/deployment; \
+  npx cdk deploy --all \
+  --parameters StaCodeArtifact:CodeArtifactDomainName="$CA_DOMAIN" \
+  --parameters StaHooks:GithubOrgName="$GH_ORG" \
+)
 
 
 echo "Linking Webhook to Github Org"
@@ -91,4 +93,4 @@ npx nx build dashboard
 cat $tmp_file > ./apps/dashboard/src/environments/environment.prod.ts
 
 echo "Deploy dashboard"
-npx cdk deploy StaDashboard
+(cd ./apps/deployment;  npx cdk deploy StaDashboard)
