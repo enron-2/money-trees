@@ -13,6 +13,7 @@
     "build": "nx run-many --target=packer --projects=parser,http,hooks-link-webhook,hooks-pipeline",
     "predeploy": "npm run build",
     "deploy": "(cd apps/deployment; npx cdk deploy --all)",
+    "destroy": "(cd apps/deployment; npx cdk destroy --all)",
     "prepare": "husky install",
     "commit": "cz",
     "nx": "nx"
