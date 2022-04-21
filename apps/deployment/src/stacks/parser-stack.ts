@@ -32,16 +32,13 @@ export class ParserStack extends Stack {
       code: lambda.Code.fromAsset(pathToCode),
       environment: {
         TABLE_NAME: database.table.tableName,
-        DOMAIN: 'enron2',
+        DOMAIN: 'cs9447-team2-demo',
       },
       timeout: Duration.seconds(30),
     }).LambdaFunction;
 
     database.grantRead(parserLambda);
     database.grantWrite(parserLambda);
-    parserLambda.role.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess')
-    );
     parserLambda.role.addManagedPolicy(
       iam.ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess')
     );
