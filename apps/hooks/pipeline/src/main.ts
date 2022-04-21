@@ -23,71 +23,59 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
     .getSecretValue({ SecretId: 'GITHUB_TOKEN' })
     .promise();
 
+  // from registering initial webhook
+  const isConnectRequest = event.ref === undefined;
+  if (isConnectRequest) return { statusCode: 200, body: 'Setup success!' };
+
   const orgName = event.repository.owner.name;
   const repoName = event.repository.name;
   const branch = /refs\/heads\/(.*)/.exec(event.ref);
   const isMainBranch = branch && branch[1] === event.repository.master_branch;
-  const isConnectRequest = event.ref === undefined; // register initial webhook
 
-  // check for package
-  const backendURL = process.env.BACKEND_URL;
-  const { status } = await fetch(
-    `${backendURL}/projects/${encodeURIComponent(`PRJ#${orgName}/${repoName}`)}`
-  );
-  const isPackage = status === 404;
+  if (!isMainBranch) return { statusCode: 400, body: 'Not a main branch' };
 
-  if (isConnectRequest || !isMainBranch)
-    return { statusCode: 400, body: 'Not a main branch' };
+  // upload to repository to Code Artifact
+  const gitUrl = event.repository.git_url;
+  const location = `/tmp/${repoName}-${Date.now()}`;
 
-  if (isPackage) {
-    // upload to repository to Code Artifact
-    const gitUrl = event.repository.git_url;
-    const location = `/tmp/${repoName}-${Date.now()}`;
+  /* call lambda with the below payloads to upload to code artifact */
+  new Lambda({}).invoke({
+    FunctionName: process.env.CODE_ARTIFACT_UPLOAD_LAMBDA,
+    Payload: JSON.stringify({
+      codeArtifactDomain: orgName,
+      codeArtifactRepo: `private-${orgName}`,
+      codeArtifactNamespace: orgName,
+      gitOwner: orgName,
+      gitRepoName: repoName,
+      gitRepoUrl: gitUrl,
+      gitToken: token,
+      downloadLocation: location,
+    }),
+  });
 
-    /* call lambda with the below payloads to upload to code artifact */
-    const lambdaName = process.env.CODE_ARTIFACT_UPLOAD_LAMBDA;
-    new Lambda({}).invoke({
-      FunctionName: lambdaName,
-      Payload: JSON.stringify({
-        codeArtifactDomain: orgName,
-        codeArtifactRepo: `private-${orgName}`,
-        codeArtifactNamespace: orgName,
-        gitOwner: orgName,
-        gitRepoName: repoName,
-        gitRepoUrl: gitUrl,
-        gitToken: token,
-        downloadLocation: location,
-      }),
-    });
-  } else {
-    // parse package-lock.json
+  // parse package-lock.json
+  const octokit = new Octokit({ auth: token });
+  const resp = await octokit.rest.repos.getContent({
+    owner: orgName,
+    repo: repoName,
+    path: 'package-lock.json',
+  });
 
-    const octokit = new Octokit({ auth: token });
-    const resp = await octokit.rest.repos.getContent({
+  new Lambda({}).invoke({
+    FunctionName: process.env.PARSER_LAMBDA,
+    Payload: JSON.stringify({
+      content: (resp.data as any).content,
       owner: orgName,
       repo: repoName,
-      path: 'package-lock.json',
-    });
+    }),
+  });
 
-    const lambdaName = process.env.PARSER_LAMBDA;
-    new Lambda({}).invoke({
-      FunctionName: lambdaName,
-      Payload: JSON.stringify({
-        content: (resp.data as any).content,
-        owner: orgName,
-        repo: repoName,
-      }),
-    });
-  }
-
-  // TODO: scanner
+  // NOTE: lambda for scanner can be invoked here
 
   return {
     statusCode: 200,
     body: JSON.stringify(
-      `Pipeline ran for created ${
-        isPackage ? 'package' : 'project'
-      } https://github.com/${orgName}/${repoName}`
+      `Pipeline ran for https://github.com/${orgName}/${repoName}`
     ),
   };
 };

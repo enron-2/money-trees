@@ -13,7 +13,6 @@ import { join } from 'path';
 
 interface HookStackProps extends StackProps {
   stageName: string;
-  backendURL: string;
   parserLambdaName: string;
 }
 
@@ -112,11 +111,13 @@ export class HookStack extends Stack {
       timeout: Duration.seconds(30),
       code: lambda.Code.fromAsset(pipelineAppPath),
       environment: {
-        BACKEND_URL: props.backendURL,
         PARSER_LAMBDA: props.parserLambdaName,
         CODE_ARTIFACT_UPLOAD_LAMBDA: codeArtifactDockerLambda.functionName,
       },
     });
+    pipelineLambda.role.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('SecretsManagerReadWrite')
+    );
 
     const pipelineApi = new apiGw.LambdaRestApi(
       this,
@@ -163,6 +164,10 @@ export class HookStack extends Stack {
         },
       }
     );
+    pipelineLinkerLambda.role.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('SecretsManagerReadWrite')
+    );
+    pipelineLinkerLambda.node.addDependency(pipelineApi);
 
     const pipelineLinkerApi = new apiGw.LambdaRestApi(this, 'RESTEndpoint', {
       handler: pipelineLinkerLambda,
