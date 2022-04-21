@@ -6,9 +6,10 @@ import { SecretsManager } from 'aws-sdk';
 const secretsManager = new SecretsManager();
 
 export const handler: Handler = async (event: APIGatewayEvent) => {
-  const { SecretString: token } = await secretsManager
+  const { SecretString } = await secretsManager
     .getSecretValue({ SecretId: 'GITHUB_TOKEN' })
     .promise();
+  const token = JSON.parse(SecretString).GITHUB_TOKEN;
   const octokit = new Octokit({ auth: token });
 
   await octokit.rest.orgs.createWebhook({

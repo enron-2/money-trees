@@ -22,9 +22,10 @@ export interface GithubWebhookPushEvent extends APIGatewayEvent {
 }
 
 export const handler: Handler = async (event: GithubWebhookPushEvent) => {
-  const { SecretString: token } = await secretsManager
+  const { SecretString } = await secretsManager
     .getSecretValue({ SecretId: 'GITHUB_TOKEN' })
     .promise();
+  const token = JSON.parse(SecretString).GITHUB_TOKEN;
 
   // from registering initial webhook
   const body = JSON.parse(event.body) as GitHubRequestBody;
