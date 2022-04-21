@@ -1,39 +1,45 @@
-import { Stack, StackProps, Construct, CfnParameter } from '@aws-cdk/core';
+import { Stack, StackProps, Construct } from '@aws-cdk/core';
 import * as codeArtifact from '@aws-cdk/aws-codeartifact';
 
-export class CodeArtifactStack extends Stack {
-  CodeArtifactDomainName: CfnParameter;
+export interface CodeArtifactStackProps extends StackProps {
+  stageName: string;
+}
 
-  constructor(scope: Construct, id: string, props?: StackProps) {
+export class CodeArtifactStack extends Stack {
+  constructor(scope: Construct, id: string, props: CodeArtifactStackProps) {
     super(scope, id, props);
 
-    this.CodeArtifactDomainName = new CfnParameter(
+    /* this is bucketname for directory */
+    const orgName = this.node.tryGetContext('CodeArtifactDomainName');
+    if (!orgName) throw new Error('CodeArtifactDomainName context undefined');
+    const caDomain = new codeArtifact.CfnDomain(
       this,
-      'CodeArtifactDomainName',
+      `${props.stageName} CA Domain`,
       {
-        type: 'String',
-        description: 'Domain name of CodeArtifact',
+        domainName: orgName,
       }
     );
 
-    /* this is bucketname for directory */
-    const orgName = this.CodeArtifactDomainName.valueAsString;
-    const caDomain = new codeArtifact.CfnDomain(this, 'CA Domain', {
-      domainName: orgName,
-    });
-
-    const publicRepo = new codeArtifact.CfnRepository(this, 'Public Repo', {
-      domainName: caDomain.domainName,
-      repositoryName: 'public-' + orgName,
-      externalConnections: ['public:npmjs'],
-    });
+    const publicRepo = new codeArtifact.CfnRepository(
+      this,
+      `${props.stageName} Public Repo`,
+      {
+        domainName: caDomain.domainName,
+        repositoryName: 'public-' + orgName,
+        externalConnections: ['public:npmjs'],
+      }
+    );
     publicRepo.addDependsOn(caDomain);
 
-    const privateRepo = new codeArtifact.CfnRepository(this, 'Private Repo', {
-      domainName: caDomain.domainName,
-      repositoryName: 'private-' + orgName,
-      upstreams: [publicRepo.repositoryName],
-    });
+    const privateRepo = new codeArtifact.CfnRepository(
+      this,
+      `${props.stageName} Private Repo`,
+      {
+        domainName: caDomain.domainName,
+        repositoryName: 'private-' + orgName,
+        upstreams: [publicRepo.repositoryName],
+      }
+    );
     privateRepo.addDependsOn(publicRepo);
   }
 }

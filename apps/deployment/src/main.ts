@@ -13,7 +13,7 @@ const env: Environment = {
 };
 const app = new App();
 
-for (const stageName of ['Sta' /*, 'Prd' */]) {
+for (const stageName of ['Dev' /*, 'Prd' */]) {
   const database = new DatabaseStack(app, `${stageName}Database`, { env });
 
   new HttpStack(app, `${stageName}Http`, {
@@ -22,13 +22,15 @@ for (const stageName of ['Sta' /*, 'Prd' */]) {
     stageName,
   });
 
-  const codeArtifact = new CodeArtifactStack(app, `${stageName}CodeArtifact`);
+  new CodeArtifactStack(app, `${stageName}CodeArtifact`, {
+    env,
+    stageName,
+  });
 
   const parser = new ParserStack(app, `${stageName}Parser`, {
     env,
     database,
     stageName,
-    codeArtifactDomain: codeArtifact.CodeArtifactDomainName,
   });
   const parserLambda = parser.lambda;
 
@@ -38,5 +40,5 @@ for (const stageName of ['Sta' /*, 'Prd' */]) {
     parserLambda,
   });
 
-  new DashboardStack(app, `${stageName}Dashboard`);
+  new DashboardStack(app, `${stageName}Dashboard`, { env, stageName });
 }
