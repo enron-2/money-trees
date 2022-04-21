@@ -26,7 +26,6 @@ for (const stageName of ['Sta' /*, 'Prd' */]) {
   const hooks = new HookStack(app, `${stageName}Hooks`, {
     env,
     stageName,
-    backendURL,
     parserLambdaName,
   });
   const pipelineSetupURL = hooks.pipelineLinkerApiURL;
