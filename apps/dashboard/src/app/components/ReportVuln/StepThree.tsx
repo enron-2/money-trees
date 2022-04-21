@@ -37,13 +37,11 @@ export const StepThree = (props: {
     const {
       target: { value },
     } = event;
-    setPackageList(
-      // On autofill we get a stringified value.
-      typeof value === 'string' ? value.split(',') : value
-    );
-    props.formData.packageIds = packageList;
-    console.log(props.formData);
+    const val = typeof value === 'string' ? value.split(',') : value;
+    setPackageList(val);
+    props.formData.packageIds = val;
     props.setFormData(props.formData);
+    console.log(props.formData);
   };
 
   return (
@@ -58,14 +56,18 @@ export const StepThree = (props: {
     >
       {props.isNewVuln ? (
         <div>
-          <Select multiple value={packageList} onChange={handlePackageChange}>
+          <Select
+            multiple
+            value={packageList}
+            onChange={(e) => handlePackageChange(e)}
+          >
             {loading ? (
               <CircularProgress />
             ) : (
               packageData.map((pkg) => {
                 return (
                   <MenuItem key={pkg.id} value={pkg.id}>
-                    {pkg.name ?? pkg.id}
+                    {pkg.name}
                   </MenuItem>
                 );
               })
@@ -81,7 +83,7 @@ export const StepThree = (props: {
               packageData.map((pkg) => {
                 return (
                   <MenuItem key={pkg.id} value={pkg.id}>
-                    {pkg.name ?? pkg.id}
+                    {pkg.name}
                   </MenuItem>
                 );
               })
