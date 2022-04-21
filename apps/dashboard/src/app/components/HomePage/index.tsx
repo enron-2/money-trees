@@ -16,6 +16,7 @@ import SearchBar from './SearchBar';
 import Packages from '../Packages';
 import Projects from '../Projects';
 import ReportVulnDialog from '../ReportVuln';
+import enron2logo from '../../../../../../assets/enron2.png';
 
 const HomePage = (props: { view: number }) => {
   const [search, setSearch] = useState('');
@@ -40,19 +41,11 @@ const HomePage = (props: { view: number }) => {
               marginLeft: '24px',
             }}
           >
-            <img
-              src={PinkSparkles}
-              alt="Pink sparkles"
-              style={{
-                maxHeight: '100%',
-                width: 'auto',
-                position: 'absolute',
-                zIndex: -1,
-              }}
-            />
+            <img src={enron2logo} alt="spinning logo" height={60} width={60} />
+
             <Typography
               variant="h6"
-              sx={{ textAlign: 'right', lineHeight: 1.2 }}
+              sx={{ textAlign: 'right', lineHeight: 1.2, pl: 1, pt: 1 }}
             >
               Enron 2 <br />
               Dashboard

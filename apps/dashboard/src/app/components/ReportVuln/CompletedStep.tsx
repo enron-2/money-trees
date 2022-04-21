@@ -24,6 +24,7 @@ export const CompletedStep = (props: { isNewVuln: boolean; formData: any }) => {
           console.log(error);
         });
     } else {
+      console.log(props.formData);
       axios
         .post(`${baseUrl}/vulns`, {
           name: props.formData.name,

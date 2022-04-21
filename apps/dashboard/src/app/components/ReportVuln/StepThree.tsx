@@ -43,11 +43,12 @@ export const StepThree = (props: {
 
   const handlePackageChange = (e: any, value: any[]) => {
     console.log(value);
+    const val = [];
     for (let i = 0; i < value.length; i++) {
-      packageList.push(value[i].id);
+      val.push(value[i].id);
     }
-    console.log(packageList);
-    props.formData.packageIds = packageList;
+    console.log(val);
+    props.formData.packageIds = val;
     props.setFormData(props.formData);
   };
 
