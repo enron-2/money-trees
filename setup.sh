@@ -1,5 +1,8 @@
 #!/bin/env bash
 
+nvm use
+npm ci
+
 getCfnOutput() {
   aws cloudformation describe-stacks --stack-name "$STACK_NAME" | jq '.Stacks[0].Outputs[]' -c | while read i; do
       Key=`echo "$i" | jq '.OutputKey' --raw-output`
@@ -65,6 +68,7 @@ npm run build
 echo "Deploying application"
 (cd ./apps/deployment; \
   npx cdk deploy --all \
+    --require-approval never \
     --context CodeArtifactDomainName="$CA_DOMAIN" \
     --context GithubOrgName="$GH_ORG" \
 )
@@ -107,6 +111,7 @@ cat $tmp_file > ./apps/dashboard/src/environments/environment.prod.ts
 
 echo "Deploy dashboard"
 (cd ./apps/deployment;  npx cdk deploy DevDashboard \
+    --require-approval never \
     --context CodeArtifactDomainName="$CA_DOMAIN" \
     --context GithubOrgName="$GH_ORG" \
 )
