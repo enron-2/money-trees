@@ -9,7 +9,6 @@ export class CodeArtifactStack extends Stack {
   constructor(scope: Construct, id: string, props: CodeArtifactStackProps) {
     super(scope, id, props);
 
-    /* this is bucketname for directory */
     const orgName = this.node.tryGetContext('CodeArtifactDomainName');
     if (!orgName) throw new Error('CodeArtifactDomainName context undefined');
     const caDomain = new codeArtifact.CfnDomain(
@@ -20,6 +19,16 @@ export class CodeArtifactStack extends Stack {
       }
     );
 
+    const privateRepo = new codeArtifact.CfnRepository(
+      this,
+      `${props.stageName} Private Repo`,
+      {
+        domainName: caDomain.domainName,
+        repositoryName: 'private-' + orgName,
+      }
+    );
+    privateRepo.addDependsOn(caDomain);
+
     const publicRepo = new codeArtifact.CfnRepository(
       this,
       `${props.stageName} Public Repo`,
@@ -29,17 +38,17 @@ export class CodeArtifactStack extends Stack {
         externalConnections: ['public:npmjs'],
       }
     );
-    publicRepo.addDependsOn(caDomain);
+    publicRepo.addDependsOn(privateRepo);
 
-    const privateRepo = new codeArtifact.CfnRepository(
+    const base = new codeArtifact.CfnRepository(
       this,
-      `${props.stageName} Private Repo`,
+      `${props.stageName} Base Repo`,
       {
         domainName: caDomain.domainName,
-        repositoryName: 'private-' + orgName,
-        upstreams: [publicRepo.repositoryName],
+        repositoryName: 'base-' + orgName,
+        upstreams: [privateRepo.repositoryName, publicRepo.repositoryName],
       }
     );
-    privateRepo.addDependsOn(publicRepo);
+    base.addDependsOn(publicRepo);
   }
 }
