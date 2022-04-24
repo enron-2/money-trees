@@ -7,6 +7,7 @@ interface CAHandlerEvent extends InvocationRequest {
   codeArtifactRepo: string;
   codeArtifactDomain: string;
   gitOwner: string;
+  namespace: string;
   gitRepoName: string;
   gitToken: string;
   downloadLocation: string;
@@ -45,31 +46,8 @@ exports.handler = async (
   // entry to directory
   chdir(event.downloadLocation);
 
-  // detach upstream public repo
-  execCmd('aws', [
-    'codeartifact',
-    'update-repository',
-    '--repository',
-    event.codeArtifactRepo,
-    '--domain',
-    event.codeArtifactDomain,
-    '--upstreams',
-  ]);
-
   // publish package
   execCmd('npm', ['publish']);
-
-  // reattach upstream public repo
-  execCmd('aws', [
-    'codeartifact',
-    'update-repository',
-    '--repository',
-    event.codeArtifactRepo,
-    '--domain',
-    event.codeArtifactDomain,
-    '--upstreams',
-    `repositoryName=public-${event.gitOwner}`,
-  ]);
 
   // cleanup
   chdir('..');
