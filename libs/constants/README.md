@@ -1,7 +1,4 @@
-# constants
+# Constants
 
-This library was generated with [Nx](https://nx.dev).
-
-## Running unit tests
-
-Run `nx test constants` to execute the unit tests via [Jest](https://jestjs.io).
+- Constants to be used across application
+- Consists of table name and the GSI names for dynamodb
