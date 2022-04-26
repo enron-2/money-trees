@@ -53,6 +53,7 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
       Payload: JSON.stringify({
         codeArtifactDomain: orgName,
         codeArtifactRepo: `private-${orgName}`,
+        codeArtifactNamespace: `@${process.env.NAMESPACE}`,
         gitOwner: orgName,
         gitRepoName: repoName,
         gitToken: token,
