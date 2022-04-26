@@ -11,47 +11,61 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) monorepo powered by
-[Nx](https://nx.dev/). Has code for http server, lambda parser and seeder.
+Software based dependency based attacks have been rising as one of the most damaging cyber attacks impacting business in this current time. This project tries to mitigate some of the risks related to dependancy based attacks by preventing basic attack vectors such as dependency confusiong, and also provides a clear and visible view of how dependencies are being used. Money Trees provides a more secure way to interact with private and public package repositories using CodeArtifact, it also provides an enforcable process to handle code changes in private repositories and a dashboard that provides actionable intel, where the developers can focus on deploying a fix when the dashboard highlights packages that are vulnerable.
 
-### `apps/http`
+TLDR: It just works
 
-- HTTP server that can be used as a lambda via API gateway proxy
-- OR start locally to do frontend development with
-- Visit `http://localhost:3000/docs` to view OpenAPI specifications
+<img 
+  src="https://i.imgur.com/VDpD4Ky.png"
+  alt="frontend pic"
+/>
 
-#### How to use locally
+## Table of contents
 
-- Start docker: `docker-compose up`
-- If starting from scratch, seed database with: `npm run seed`
-- Then start the server with: `npm run start http`
-
-### `apps/parser`
-
-- Works only with lambda for S3 bucket notification events
-- Parse lock file and save to database
-
-### `apps/seeder`
-
-- Purely to seed local database with lock files from open source projects
-- Run: `npm run seed`
-
-### `libs/core`
-
-READ: [libs/core/README.md](./libs/core/README.md)
-
-### `libs/schemas`
-
-- Contain schemas for dynamodb
-- Import `SchemaModule` to be able to inject model into service/controller
+- [Installation](#installation)
+- [Links](#links)
+- [Usage](#usage)
+  - [Frontend](#frontend)
 
 ## Installation
 
-Install all dependencies
+Install all dependencies, use node 14.18.1
 
 ```bash
 $ npm install
 ```
+
+## Deployment
+
+Run the setup script [`./setup.sh`](./setup.sh) to deploy the application. Fill in the prompts when requested
+
+## Usage
+
+- First an npmjs account has to be created and a free organisation needs to be created.
+- This organisation now serves as the scope/namespace and nobody can create a public package with the name `@{organisation name}/{package-name}` except the owner of the npmjs account.
+- This project can then be setup with the created organisation.
+- You then create a new github repository and initiates a secret_package under it by running:
+
+```bash
+$ npm init --scope=@{organisation name}
+```
+
+- Once the the secret_package is ready to be used, a `git push` or merge to main uploads the `@{organisation name}/secret_package` to the private repository of CodeArtifcat.
+- Now any `npm install @{organisation name}/secret_package` will consider the private repository for CodeArtifact and install and that latest version.
+- During the setup script there will be a link to access the dashboard for the project
+- The dashboard will then display all the packages and projects associated with the orgnisation created earlier
+- You can then select the report vulnerability to report a vulnerability into the databse that can then be viewed in the dashboard
+
+### Frontend
+
+Once the frotend is deployed you will be able to view the packages and projects using the web-ui, you can swap between package view and project view to get a better idea of the dependencies used within the organisation.
+
+<img 
+  src="https://i.imgur.com/QNyWgBz.png"
+  alt="project view"
+/>
+
+The report vulnerability button can be pressed
 
 ## Test
 
@@ -68,17 +82,6 @@ $ npm run test
 $ npm run test:clean
 ```
 
-### Coverage
-
-- Runs all available tests with coverage report
-
-```bash
-$ npm run test:coverage
-```
-
-- To run without hitting the cache, use: `npm run test:coverage -- --skip-nx-cache`
-- Coverage reports are generated in `coverage` directory
-
 ### End-to-end
 
 - Only for http module
@@ -94,19 +97,6 @@ npm run test:e2e
 docker-compose down
 ```
 
-## Building/compiling
-
-```bash
-# build all
-# bundles node_modules in dist
-npm run build
-
-# build specific target with node_modules
-nx run (http|parser):packer
-```
-
-- Refer to `apps/**/project.json` for more commands
-
 ## Support
 
 - ?????
@@ -114,6 +104,12 @@ nx run (http|parser):packer
 ## Stay in touch
 
 - ?????
+
+## Links
+
+[![a link]()]
+
+- add links here
 
 ## License
 
