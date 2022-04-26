@@ -19,6 +19,7 @@ getCfnOutput() {
 echo "SETUP"
 
 read -p "CodeArtifact domain name: " CA_DOMAIN
+read -p "CodeArtifact namespace (without '@')" CA_NAMESPACE
 
 read -p "Github Access Token: " GH_TOKEN
 read -p "Github Org Name: " GH_ORG
@@ -70,6 +71,7 @@ echo "Deploying application"
   npx cdk deploy --all \
     --context CodeArtifactDomainName="$CA_DOMAIN" \
     --context GithubOrgName="$GH_ORG" \
+    --context CodeArtifactNamespace="$CA_NAMESPACE"
 )
 
 
@@ -112,6 +114,7 @@ echo "Deploy dashboard"
 (cd ./apps/deployment;  npx cdk deploy DevDashboard \
     --context CodeArtifactDomainName="$CA_DOMAIN" \
     --context GithubOrgName="$GH_ORG" \
+    --context CodeArtifactNamespace="$CA_NAMESPACE"
 )
 
 dash_url="$(getCfnOutput "DevDashboardURL")"

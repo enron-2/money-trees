@@ -6,6 +6,7 @@ import { InvocationRequest } from 'aws-sdk/clients/lambda';
 interface CAHandlerEvent extends InvocationRequest {
   codeArtifactRepo: string;
   codeArtifactDomain: string;
+  codeArtifactNamespace: string;
   gitOwner: string;
   namespace: string;
   gitRepoName: string;
@@ -34,6 +35,8 @@ exports.handler = async (
     event.codeArtifactDomain,
     '--repository',
     event.codeArtifactRepo,
+    '--namespace',
+    event.namespace,
   ]);
 
   // clone git repo to location

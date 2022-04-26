@@ -31,6 +31,9 @@ export class HookStack extends Stack {
       'code-artifact-docker'
     );
 
+    const namesapce = this.node.tryGetContext('CodeArtifactNamespace');
+    if (!namesapce) throw new Error('CodeArtifactNamespace context undefined');
+
     const codeArtifactDockerLambda = new lambda.DockerImageFunction(
       this,
       `${props.stageName}-codeartifact-docker`,
@@ -42,6 +45,9 @@ export class HookStack extends Stack {
             entrypoint: ['/lambda-entrypoint.sh'],
           }
         ),
+        environment: {
+          NAMESPACE: namesapce,
+        },
         timeout: Duration.seconds(90),
         memorySize: 8192,
       }
