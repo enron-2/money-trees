@@ -8,7 +8,7 @@ This repository contains infrastructure as code for deploying our application on
 
 Generate your Personal Access Token [here](https://github.com/settings/tokens/new), assuming you are logged in to a GitHub account with admin access to the desired GitHub organisation to connect to.
 
-The application requires three permissions:
+The application requires the following permissions for the token:
 
 - read:org
 - admin:org_hook
