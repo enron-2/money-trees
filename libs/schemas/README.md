@@ -5,17 +5,14 @@
 
 ## Table design
 
-- Currently uses 2 tables
-- Table that holds package + vuln and another that holds project and package ID
-- Downside: cannot list all 'vulns' and paginate easily
-
-## New new table design
-
 - Pure single table design
 - `pk` + `sk` forms the composite primary key
 - GSI
   - `InverseGSI`: use `sk` as `HASH` and `pk` as `RANGE`
   - `TypeGSI`: use `type` as `HASH` and `pk` as `RANGE`
+- `type` indicates what kind of a 'row' is
+- Links between entities are denoted by the use of `pk` and `sk`
+  - `pk` indicates the parent, and `sk` is the key of the child
 
 ### Package entity
 
