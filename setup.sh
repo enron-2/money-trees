@@ -19,7 +19,7 @@ getCfnOutput() {
 echo "SETUP"
 
 read -p "CodeArtifact domain name: " CA_DOMAIN
-read -p "CodeArtifact namespace (without '@')" CA_NAMESPACE
+read -p "CodeArtifact namespace (without '@'): " CA_NAMESPACE
 
 read -p "Github Access Token: " GH_TOKEN
 read -p "Github Org Name: " GH_ORG
@@ -36,7 +36,7 @@ then
   export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
 fi
 
-if [ ! -z $AWS_SECRET_ACCESS_KEY];
+if [ ! -z $AWS_SECRET_ACCESS_KEY ];
 then
   export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
 fi
