@@ -1,6 +1,7 @@
 # HTTP
 
 - HTTP server that can be used as a lambda via API gateway proxy
+- Locally, it has no difference from a typical `NestJs` backend
 - OR start locally to do frontend development with
 - Visit `http://localhost:3000/docs` to view OpenAPI specifications
 - Opted for a monolithic design as it simplifies development
