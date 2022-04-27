@@ -24,6 +24,7 @@ Money Trees provides a more secure way to interact with private and public packa
 - [Demo](#demo)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Team](#team)
 - [Components](#components)
 
 ## Background
@@ -31,6 +32,8 @@ Money Trees provides a more secure way to interact with private and public packa
 Software based dependency based attacks have been rising as one of the most damaging cyber attacks impacting business in this current time. This project created by Enron2 tries to mitigate some of the risks related to dependancy based attacks by preventing basic attack vectors such as dependency confusion, and also provides a clear and visible view of how dependencies are being used.
 
 ## Demo
+
+https://www.youtube.com/watch?v=dzok_QP5998
 
 ## Installation
 
@@ -55,11 +58,33 @@ Run the setup script [`./setup.sh`](./setup.sh) to deploy the application. Fill 
 $ npm init --scope=@{organisation name}
 ```
 
-- Once the the secret_package is ready to be used, a `git push` or merge to main uploads the `@{organisation name}/secret_package` to the private repository of CodeArtifcat.
-- Now any `npm install @{organisation name}/secret_package` will consider the private repository for CodeArtifact and install and that latest version.
+- Once the the secret_package is ready to be used, a `git push` or merge to main uploads the `@{organisation name}/secret_package` to the private repository of CodeArtifact.
+- You then have to sign into CodeArtifact with the following command
+
+```bash
+$ aws codeartifact login --tool npm --domain <company> --repository base-<company> --namespace @<scope>
+```
+
+- Now any `npm install @{organisation name}/secret_package` will consider the private repository for CodeArtifact and install that latest version.
 - During the setup script there will be a link to access the dashboard for the project
 - The dashboard will then display all the packages and projects associated with the orgnisation created earlier
 - You can then select the report vulnerability to report a vulnerability into the databse that can then be viewed in the dashboard
+
+## Team
+
+```
+Team 2 (Enron 2)
+Mentor: Brian Farnhill & Elisa Han
+Tutor: Tim Thacker
+
+Members:
+Razin Idzuddin
+William Tremain
+Fiona O'Chee
+Lachlan Waugh
+Steven Phung
+Andrew Xie
+```
 
 ## Components
 
