@@ -10,15 +10,12 @@ It'll run a number of user-supplied SAST (static application security testing) t
 
 # Features
 
-## Local deployment
-To run locally, all you need to have is:
-* Include the scanners you'd like to use in the [`src/assets/config.json`](src/assets/config.json) file.
-* Transpile/build the project into code `npm build`
-* Deploy the scanner with ``
 ## Modularity
+
 To include your own scanner tool, all you need to do is:
-* include a new TypeScript file in [`/src/lib/scanners/`](/src/lib/scanners), containing logic on how to setup, run, and cleanup your scanner (using the template provided below),
-* include an entry for this in the `kid` in [`/src/lib/scanners/scanner.ts`](/src/lib/scanners/scanner.ts), pointing to the object.
+
+- include a new TypeScript file in [`/src/lib/scanners/`](/src/lib/scanners), containing logic on how to setup, run, and cleanup your scanner (using the template provided below),
+- include an entry for this in the `kid` in [`/src/lib/scanners/scanner.ts`](/src/lib/scanners/scanner.ts), pointing to the object.
 
 ```js
 import { Scanner, IssuesType } from './scanner';
@@ -40,10 +37,24 @@ export class NewScanner extends Scanner {
 
   cleanup = () => pass; // Implement any necessary cleanup (invoked when the scanning is complete)
 }
-
 ```
 
+# Usage
+
+## Local deployment
+
+To run locally, all you need to have is:
+
+- Include the scanners you'd like to use in the [`src/assets/config.json`](src/assets/config.json) file.
+- Transpile/build the project into code `npm build`
+- Deploy the scanner with `node main` in [`dist/`](src/assets/config.json)
+
+## Normal deployment
+
+The scanner will be invoked as part of the normal CDK deployment, when the parser is run. It'll clone the repository, and upload any identified vulnerabilities to the database.
+
 # Directory structure
+
 ```
 .
 └── apps/scanner
