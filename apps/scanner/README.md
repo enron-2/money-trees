@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="src/assets/scanner.jpg">
+    <img src="src/assets/scanner.webp">
 </p>
 
 # ScannR: A modular scanning solution
@@ -68,7 +68,7 @@ The scanner will be invoked as part of the normal CDK deployment, when the parse
     │   │   ├── controller.ts   handles deploying, running, and cleaning all the scanners as a group.
     │   │   ├── helper.ts       helpers to fetch from s3 and post issues to the database.
     │   │   ├── secrets.ts      connects to secretsmanager to authenticate with AWS and GitHub
-    │   └── main.tsx    Entry point for react-scripts to build the app.
+    │   └── main.ts   Used for the lambda invocation logic, to defer to lib functions
     ├── tmp/
     │   ├── repo        the location that the repo code will be stored
     │   └── scanners    any files used by the each of the scanners as they execute.
