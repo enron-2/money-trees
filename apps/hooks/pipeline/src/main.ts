@@ -39,12 +39,9 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
 
   if (!isMainBranch) return { statusCode: 400, body: 'Not a main branch' };
 
-  // upload to repository to Code Artifact
-  const location = `/tmp/${repoName}-${Date.now()}`;
-
-  /* call lambda with the below payloads to upload to code artifact */
   const lambda = new Lambda({ region: 'ap-southeast-2' });
 
+  // upload to repository to Code Artifact
   console.log(`Invoking ${process.env.CODE_ARTIFACT_UPLOAD_LAMBDA}`);
   await lambda
     .invoke({
@@ -53,11 +50,9 @@ export const handler: Handler = async (event: GithubWebhookPushEvent) => {
       Payload: JSON.stringify({
         codeArtifactDomain: orgName,
         codeArtifactRepo: `private-${orgName}`,
-        codeArtifactNamespace: `@${process.env.NAMESPACE}`,
         gitOwner: orgName,
         gitRepoName: repoName,
         gitToken: token,
-        downloadLocation: location,
       }),
     })
     .promise();

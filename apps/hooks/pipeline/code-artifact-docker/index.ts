@@ -6,12 +6,10 @@ import { InvocationRequest } from 'aws-sdk/clients/lambda';
 interface CAHandlerEvent extends InvocationRequest {
   codeArtifactRepo: string;
   codeArtifactDomain: string;
-  codeArtifactNamespace: string;
   gitOwner: string;
   namespace: string;
   gitRepoName: string;
   gitToken: string;
-  downloadLocation: string;
 }
 
 const execCmd = (cmd: string, args?: string[]) => {
@@ -36,18 +34,19 @@ exports.handler = async (
     '--repository',
     event.codeArtifactRepo,
     '--namespace',
-    event.namespace,
+    process.env.NAMESPACE,
   ]);
 
   // clone git repo to location
+  const downloadLocation = `/tmp/${event.gitRepoName}-${Date.now()}`;
   execCmd('git', [
     'clone',
     `https://${event.gitToken}:x-oauth-basic@github.com/${event.gitOwner}/${event.gitRepoName}.git`,
-    event.downloadLocation,
+    downloadLocation,
   ]);
 
   // entry to directory
-  chdir(event.downloadLocation);
+  chdir(downloadLocation);
 
   // publish package
   execCmd('npm', ['publish']);
