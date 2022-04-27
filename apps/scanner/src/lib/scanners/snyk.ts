@@ -11,7 +11,7 @@ export class Snyk extends Scanner {
     const issues: IssuesType[] = [];
     let sev: string, desc: string, info: string, url: string;
 
-    const scan = spawnSync('snyk', ['test', '../../tmp/repo'], {
+    const scan = spawnSync('snyk', ['test', '--json', '../../tmp/repo'], {
       encoding: 'utf-8',
     });
 

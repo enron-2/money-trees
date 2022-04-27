@@ -1,5 +1,6 @@
 import { Scanner, IssuesType } from './scanner';
 import { execSync, spawnSync } from 'child_process';
+import {  } from '';
 
 export class SnykCode extends Scanner {
   constructor() {
@@ -11,7 +12,7 @@ export class SnykCode extends Scanner {
     const issues: IssuesType[] = [];
     let sev: string, desc: string, loc: string, info: string;
 
-    const scan = spawnSync('snyk', ['code', 'test', '../../tmp/repo'], {
+    const scan = spawnSync('snyk', ['code', 'test', '--json', '../../tmp/repo'], {
       encoding: 'utf-8',
     });
 
