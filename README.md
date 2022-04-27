@@ -23,7 +23,7 @@ Money Trees provides a more secure way to interact with private and public packa
 - [Background](#background)
 - [Demo](#demo)
 - [Installation](#installation)
-- [Demployment](#deployment)
+- [Deployment](#deployment)
 - [Usage](#usage)
 - [Team](#team)
 - [Components](#components)
