@@ -23,7 +23,7 @@ Money Trees provides a more secure way to interact with private and public packa
 - [Background](#background)
 - [Demo](#demo)
 - [Installation](#installation)
-- [Demployment](#deployment)
+- [Deployment](#deployment)
 - [Usage](#usage)
 - [Team](#team)
 - [Components](#components)
@@ -56,17 +56,17 @@ Run the setup script [`./setup.sh`](./setup.sh) to deploy the application. Fill 
 - You then create a new github repository and initiates a secret_package under it by running:
 
 ```bash
-$ npm init --scope=@{organisation name}
+$ npm init --scope=<chosen namespace during setup>
 ```
 
-- Once the the secret_package is ready to be used, a `git push` or merge to main uploads the `@{organisation name}/secret_package` to the private repository of CodeArtifact.
+- Once the the secret_package is ready to be used, a `git push` or merge to main uploads the `@{organisation name}/@<chosen namespace during setup>/<package-name>` to the private repository of CodeArtifact.
 - You then have to sign into CodeArtifact with the following command
 
 ```bash
 $ aws codeartifact login --tool npm --domain <company> --repository base-<company> --namespace <scope>
 ```
 
-- Now any `npm install @{organisation name}/secret_package` will consider the private repository for CodeArtifact and install that latest version.
+- Now any `npm install @{organisation name}/@<chosen namespace during setup>/<package-name>` will consider the private repository for CodeArtifact and install that latest version.
 - During the setup script there will be a link to access the dashboard for the project
 - The dashboard will then display all the packages and projects associated with the orgnisation created earlier
 - You can then select the report vulnerability to report a vulnerability into the databse that can then be viewed in the dashboard
