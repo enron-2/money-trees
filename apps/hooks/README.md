@@ -48,4 +48,4 @@ This lambda uses a custom image because we needed to use aws command line tool t
 
 This is where all the private packages/projects are stored. Moreover, CodeArtifact was configured in the below format to ensure a separation between the public and private repositories. The design has changed from the original structure, but the private repository still takes precedence according to the CodeArtifact documentation [page 42-43](https://docs.aws.amazon.com/codeartifact/latest/ug/codeartifact-user.pdf). This is because upstream repository orders are dependent on repository creation order. In the deployment of CodeArtifact, the private repository is created first, and then the public which ensures the priority we had previously is preserved. The main benefit of this is that no public packages will appear in the private repository as opposed to previously.
 
-![image info](./pipeline/code-artifact-docker/codeartifact-structure.pngimage.png)
+![image info](./pipeline/code-artifact-docker/codeartifact-structure.png)
