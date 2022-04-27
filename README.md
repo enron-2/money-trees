@@ -33,7 +33,7 @@ Software based dependency based attacks have been rising as one of the most dama
 
 ## Demo
 
-https://www.youtube.com/watch?v=dzok_QP5998
+[![Watch the vide](https://img.youtube.com/vi/dzok_QP5998/maxresdefault.jpg)](https://https://www.youtube.com/watch?v=dzok_QP5998)
 
 ## Installation
 
