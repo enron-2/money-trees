@@ -1,5 +1,5 @@
 <p align="center">
-  <img 
+  <img
     src="https://i.imgur.com/kk08mRi.png"
     width="320"
     alt="Enron logo"
@@ -11,9 +11,9 @@
 
 ## What is this?
 
-Money Trees provides a more secure way to interact with private and public package repositories using CodeArtifact, it also provides an enforcable process to handle code changes in private repositories and a dashboard that provides actionable intel, where the developers can focus on deploying a fix when the dashboard highlights packages that are vulnerable.
+Money Trees provides a more secure way to interact with private and public package repositories using CodeArtifact, it also provides an enforcible process to handle code changes in private repositories and a dashboard that provides actionable intel, where the developers can focus on deploying a fix when the dashboard highlights packages that are vulnerable.
 
-<img 
+<img
   src="https://i.imgur.com/VDpD4Ky.png"
   alt="frontend pic"
 />
@@ -30,7 +30,7 @@ Money Trees provides a more secure way to interact with private and public packa
 
 ## Background
 
-Software based dependency based attacks have been rising as one of the most damaging cyber attacks impacting business in this current time. This project created by Enron2 tries to mitigate some of the risks related to dependancy based attacks by preventing basic attack vectors such as dependency confusion, and also provides a clear and visible view of how dependencies are being used.
+Software based dependency based attacks have been rising as one of the most damaging cyber attacks impacting business in this current time. This project created by Enron2 tries to mitigate some of the risks related to dependency based attacks by preventing basic attack vectors such as dependency confusion, and also provides a clear and visible view of how dependencies are being used.
 
 ## Demo
 
@@ -53,23 +53,23 @@ Run the setup script [`./setup.sh`](./setup.sh) to deploy the application. Fill 
 - First an npmjs account has to be created and a free organisation needs to be created.
 - This organisation now serves as the scope/namespace and nobody can create a public package with the name `@<chosen namespace during setup>/<package-name>` except the owner of the npmjs account.
 - This project can then be setup with the created organisation.
-- You then create a new github repository and initiate a new package under it by running:
+- You then create a new GitHub repository and initiate a new package under it by running:
 
 ```bash
 $ npm init --scope=<chosen namespace during setup>
 ```
 
-- Once the the new package is ready to be used, a `git push` or merge to main uploads the `/@<chosen namespace during setup>/<package-name>` to the private repository of CodeArtifact.
+- Once the new package is ready to be used, a `git push` or merge to main uploads the `@<chosen namespace during setup>/<package-name>` to the private repository of CodeArtifact.
 - You then have to sign into CodeArtifact with the following command
 
 ```bash
 $ aws codeartifact login --tool npm --domain <company> --repository base-<company> --namespace <scope>
 ```
 
-- Now any `npm install /@<chosen namespace during setup>/<package-name>` will consider the private repository for CodeArtifact and install that latest version.
+- Now any `npm install @<chosen namespace during setup>/<package-name>` will consider the private repository for CodeArtifact and install that latest version.
 - During the setup script there will be a link to access the dashboard for the project
 - The dashboard will then display all the packages and projects associated with the orgnisation created earlier
-- You can then select the report vulnerability to report a vulnerability into the databse that can then be viewed in the dashboard
+- You can then select the report vulnerability to report a vulnerability into the database that can then be viewed in the dashboard
 
 ## Team
 
