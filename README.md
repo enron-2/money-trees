@@ -45,7 +45,7 @@ $ npm install
 
 ## Deployment
 
-Run the setup script [`./setup.sh`](./setup.sh) to deploy the application. Fill in the prompts when requested
+Run the setup script [`./setup.sh`](./setup.sh) to deploy the application. Fill in the prompts when requested, for more info read the deployment documentation [here](./apps/deployment/README.md).
 
 ## Usage
 
