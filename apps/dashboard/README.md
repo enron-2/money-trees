@@ -2,7 +2,7 @@
 
 This dashboard allows users to view and manage projects, packages and vulnerabilities in their github organisation.
 
-Built in [https://reactjs.org/](React) with [https://mui.com/](Material UI).
+Built in [React](https://reactjs.org/) with [Material UI](https://mui.com/).
 
 ## Features
 
