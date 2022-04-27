@@ -51,7 +51,7 @@ Run the setup script [`./setup.sh`](./setup.sh) to deploy the application. Fill 
 ## Usage
 
 - First an npmjs account has to be created and a free organisation needs to be created.
-- This organisation now serves as the scope/namespace and nobody can create a public package with the name `@{organisation name}/{package-name}` except the owner of the npmjs account.
+- This organisation now serves as the scope/namespace and nobody can create a public package with the name `@<chosen namespace during setup>/<package-name>` except the owner of the npmjs account.
 - This project can then be setup with the created organisation.
 - You then create a new github repository and initiates a secret_package under it by running:
 
