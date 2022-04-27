@@ -53,13 +53,13 @@ Run the setup script [`./setup.sh`](./setup.sh) to deploy the application. Fill 
 - First an npmjs account has to be created and a free organisation needs to be created.
 - This organisation now serves as the scope/namespace and nobody can create a public package with the name `@<chosen namespace during setup>/<package-name>` except the owner of the npmjs account.
 - This project can then be setup with the created organisation.
-- You then create a new github repository and initiates a secret_package under it by running:
+- You then create a new github repository and initiate a new package under it by running:
 
 ```bash
 $ npm init --scope=<chosen namespace during setup>
 ```
 
-- Once the the secret_package is ready to be used, a `git push` or merge to main uploads the `/@<chosen namespace during setup>/<package-name>` to the private repository of CodeArtifact.
+- Once the the new package is ready to be used, a `git push` or merge to main uploads the `/@<chosen namespace during setup>/<package-name>` to the private repository of CodeArtifact.
 - You then have to sign into CodeArtifact with the following command
 
 ```bash
