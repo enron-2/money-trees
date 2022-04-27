@@ -9,112 +9,91 @@
 [![codecov](https://codecov.io/gh/cs9447-team2/money-trees/branch/main/graph/badge.svg?token=QMGZT3LLA3)](https://codecov.io/gh/cs9447-team2/money-trees)
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 
-## Description
+## What is this?
 
-[Nest](https://github.com/nestjs/nest) monorepo powered by
-[Nx](https://nx.dev/). Has code for http server, lambda parser and seeder.
+Money Trees provides a more secure way to interact with private and public package repositories using CodeArtifact, it also provides an enforcable process to handle code changes in private repositories and a dashboard that provides actionable intel, where the developers can focus on deploying a fix when the dashboard highlights packages that are vulnerable.
 
-### `apps/http`
+<img 
+  src="https://i.imgur.com/VDpD4Ky.png"
+  alt="frontend pic"
+/>
 
-- HTTP server that can be used as a lambda via API gateway proxy
-- OR start locally to do frontend development with
-- Visit `http://localhost:3000/docs` to view OpenAPI specifications
+## Table of contents
 
-#### How to use locally
+- [Background](#background)
+- [Demo](#demo)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Team](#team)
+- [Components](#components)
 
-- Start docker: `docker-compose up`
-- If starting from scratch, seed database with: `npm run seed`
-- Then start the server with: `npm run start http`
+## Background
 
-### `apps/parser`
+Software based dependency based attacks have been rising as one of the most damaging cyber attacks impacting business in this current time. This project created by Enron2 tries to mitigate some of the risks related to dependancy based attacks by preventing basic attack vectors such as dependency confusion, and also provides a clear and visible view of how dependencies are being used.
 
-- Works only with lambda for S3 bucket notification events
-- Parse lock file and save to database
+## Demo
 
-### `apps/seeder`
-
-- Purely to seed local database with lock files from open source projects
-- Run: `npm run seed`
-
-### `libs/core`
-
-READ: [libs/core/README.md](./libs/core/README.md)
-
-### `libs/schemas`
-
-- Contain schemas for dynamodb
-- Import `SchemaModule` to be able to inject model into service/controller
+https://www.youtube.com/watch?v=dzok_QP5998
 
 ## Installation
 
-Install all dependencies
+Install all dependencies, use node 14.18.1
 
 ```bash
 $ npm install
 ```
 
-## Test
+## Deployment
 
-### Unit
+Run the setup script [`./setup.sh`](./setup.sh) to deploy the application. Fill in the prompts when requested
 
-- Not 100% completed
-- Only parser has proper tests
+## Usage
 
-```bash
-# unit tests
-$ npm run test
-
-# unit tests w/o cache
-$ npm run test:clean
-```
-
-### Coverage
-
-- Runs all available tests with coverage report
+- First an npmjs account has to be created and a free organisation needs to be created.
+- This organisation now serves as the scope/namespace and nobody can create a public package with the name `@{organisation name}/{package-name}` except the owner of the npmjs account.
+- This project can then be setup with the created organisation.
+- You then create a new github repository and initiates a secret_package under it by running:
 
 ```bash
-$ npm run test:coverage
+$ npm init --scope=@{organisation name}
 ```
 
-- To run without hitting the cache, use: `npm run test:coverage -- --skip-nx-cache`
-- Coverage reports are generated in `coverage` directory
-
-### End-to-end
-
-- Only for http module
+- Once the the secret_package is ready to be used, a `git push` or merge to main uploads the `@{organisation name}/secret_package` to the private repository of CodeArtifact.
+- You then have to sign into CodeArtifact with the following command
 
 ```bash
-# Start docker
-docker-compose up -d
-
-# Run script
-npm run test:e2e
-
-# Stop docker
-docker-compose down
+$ aws codeartifact login --tool npm --domain <company> --repository base-<company> --namespace @<scope>
 ```
 
-## Building/compiling
+- Now any `npm install @{organisation name}/secret_package` will consider the private repository for CodeArtifact and install that latest version.
+- During the setup script there will be a link to access the dashboard for the project
+- The dashboard will then display all the packages and projects associated with the orgnisation created earlier
+- You can then select the report vulnerability to report a vulnerability into the databse that can then be viewed in the dashboard
 
-```bash
-# build all
-# bundles node_modules in dist
-npm run build
+## Team
 
-# build specific target with node_modules
-nx run (http|parser):packer
+```
+Team 2 (Enron 2)
+Mentor: Brian Farnhill & Elisa Han
+Tutor: Tim Thacker
+
+Members:
+Razin Idzuddin
+William Tremain
+Fiona O'Chee
+Lachlan Waugh
+Steven Phung
+Andrew Xie
 ```
 
-- Refer to `apps/**/project.json` for more commands
+## Components
 
-## Support
+Click on the links below to learn more about each individual component and how it functions in the project
 
-- ?????
-
-## Stay in touch
-
-- ?????
-
-## License
-
-- ?????
+- [Deployment](./apps/deployment/README.md)
+- [Hooks](./apps/hooks/README.md)
+- [HTTP](./apps/http/README.md)
+- [Parser](./apps/parser/README.md)
+- [Dashboard](./apps/dashboard/README.md)
+- [Scanner](./apps/scanner/README.md)
+- [Seeder](./apps/seeder/README.md)
