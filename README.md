@@ -63,7 +63,7 @@ $ npm init --scope=@{organisation name}
 - You then have to sign into CodeArtifact with the following command
 
 ```bash
-$ aws codeartifact login --tool npm --domain <company> --repository base-<company> --namespace @<scope>
+$ aws codeartifact login --tool npm --domain <company> --repository base-<company> --namespace <scope>
 ```
 
 - Now any `npm install @{organisation name}/secret_package` will consider the private repository for CodeArtifact and install that latest version.
